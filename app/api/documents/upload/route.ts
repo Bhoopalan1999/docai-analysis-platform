@@ -3,7 +3,7 @@ import { getServerSession } from '@/lib/auth/server';
 import { db } from '@/lib/db';
 import { documents } from '@/lib/db/schema';
 import { uploadFileToS3, generateS3Key } from '@/lib/storage/s3';
-import { nanoid } from 'nanoid';
+import { processDocumentQueue } from '@/lib/queue/processor';
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,6 +63,17 @@ export async function POST(request: NextRequest) {
         status: 'uploaded',
       })
       .returning();
+
+    // Trigger document processing asynchronously (fire-and-forget)
+    // Processing will extract text, chunk, generate embeddings, and index in vector DB
+    // Note: In production, use a proper job queue (Bull, BullMQ, etc.) instead
+    processDocumentQueue(document.id, session.user.id, document.s3Key, fileType as 'pdf' | 'docx' | 'xlsx').catch(
+      (error) => {
+        console.error(`Failed to process document ${document.id}:`, error);
+        // Don't fail the upload if processing fails
+        // The user can manually trigger processing later via the API
+      }
+    );
 
     return NextResponse.json({
       success: true,

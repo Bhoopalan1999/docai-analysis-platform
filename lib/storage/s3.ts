@@ -58,3 +58,31 @@ export function generateS3Key(userId: string, fileName: string): string {
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
   return `documents/${userId}/${timestamp}-${sanitizedFileName}`;
 }
+
+/**
+ * Download a file from S3
+ * @param key - S3 key of the file
+ * @returns File buffer
+ */
+export async function getFileFromS3(key: string): Promise<Buffer> {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+  });
+
+  const response = await s3Client.send(command);
+
+  if (!response.Body) {
+    throw new Error(`File not found in S3: ${key}`);
+  }
+
+  // Convert stream to buffer
+  const chunks: Uint8Array[] = [];
+  const stream = response.Body as any;
+
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+
+  return Buffer.concat(chunks);
+}
