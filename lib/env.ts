@@ -34,6 +34,12 @@ export const env = {
   // OpenAI
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
 
+  // Anthropic Claude
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+
+  // Google Gemini
+  GOOGLE_AI_API_KEY: process.env.GOOGLE_AI_API_KEY,
+
   // Pinecone
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,
   PINECONE_INDEX: process.env.PINECONE_INDEX,
