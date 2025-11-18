@@ -28,7 +28,7 @@ export const sessions = pgTable('session', {
 
 // Accounts table (Better-Auth - for OAuth providers)
 export const accounts = pgTable('account', {
-  id: uuid('id').primaryKey().defaultRandom(),
+  id: text('id').primaryKey(),
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
@@ -47,7 +47,7 @@ export const accounts = pgTable('account', {
 
 // Verifications table (Better-Auth - for email verification, password reset)
 export const verifications = pgTable('verification', {
-  id: uuid('id').primaryKey().defaultRandom(),
+  id: text('id').primaryKey(),
   identifier: text('identifier').notNull(),
   value: text('value').notNull(),
   expiresAt: timestamp('expires_at').notNull(),
