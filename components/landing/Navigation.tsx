@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Logo } from '@/components/Logo';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 
 export function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -89,6 +89,7 @@ export function Navigation() {
                 side="right"
                 className="w-[300px]"
               >
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <div className="flex flex-col space-y-4 mt-8">
                   <Link
                     href="#features"
