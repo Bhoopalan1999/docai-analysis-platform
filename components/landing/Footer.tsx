@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Github, Twitter, Linkedin } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 
 export function Footer() {
   return (
@@ -10,7 +11,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" />
+              <Logo />
               <span className="text-xl font-bold">DocAI</span>
             </div>
             <p className="text-muted-foreground max-w-md">

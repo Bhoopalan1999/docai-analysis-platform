@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText, BarChart3, Settings, Upload, Sparkles } from 'lucide-react';
+import { FileText, BarChart3, Settings, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/Logo';
 
 const navigation = [
   { name: 'Documents', href: '/documents', icon: FileText },
@@ -22,9 +23,7 @@ export function Sidebar() {
           href="/documents"
           className="flex items-center space-x-2"
         >
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-white" />
-          </div>
+          <Logo />
           <span className="text-xl font-bold">DocAI</span>
         </Link>
       </div>

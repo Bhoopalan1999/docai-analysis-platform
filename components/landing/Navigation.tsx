@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { Logo } from '@/components/Logo';
 
 export function Navigation() {
   return (
@@ -18,7 +19,7 @@ export function Navigation() {
             href="/"
             className="flex items-center space-x-2"
           >
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" />
+            <Logo />
             <span className="text-xl font-bold">DocAI</span>
           </Link>
 

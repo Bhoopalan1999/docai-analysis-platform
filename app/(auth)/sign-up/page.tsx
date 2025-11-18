@@ -1,5 +1,6 @@
 import { SignUpForm } from '@/components/auth/SignUpForm';
 import Link from 'next/link';
+import { Logo } from '@/components/Logo';
 
 export default function SignUpPage() {
   return (
@@ -10,7 +11,7 @@ export default function SignUpPage() {
             href="/"
             className="inline-flex items-center space-x-2 mb-4"
           >
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" />
+            <Logo />
             <span className="text-xl font-bold">DocAI</span>
           </Link>
           <h1 className="text-2xl font-bold">Create your account</h1>
