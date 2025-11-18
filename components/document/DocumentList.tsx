@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { DocumentCard } from '@/components/document/DocumentCard';
 import { EmptyState } from '@/components/dashboard/EmptyState';
-import { FileText, Loader2 } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 
 type Document = {
   id: string;
@@ -43,11 +44,18 @@ export function DocumentList() {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[1, 2, 3].map((i) => (
-          <Skeleton
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Card
             key={i}
-            className="h-32"
-          />
+            className="p-4 border-border/50"
+          >
+            <Skeleton className="h-6 w-3/4 mb-3" />
+            <Skeleton className="h-4 w-1/2 mb-4" />
+            <div className="flex gap-2">
+              <Skeleton className="h-9 flex-1" />
+              <Skeleton className="h-9 flex-1" />
+            </div>
+          </Card>
         ))}
       </div>
     );
@@ -55,9 +63,12 @@ export function DocumentList() {
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <p className="text-destructive">{error}</p>
-      </div>
+      <Card className="p-8 border-destructive/50 bg-destructive/5">
+        <div className="text-center">
+          <p className="text-destructive font-medium mb-2">Failed to load documents</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </Card>
     );
   }
 
@@ -66,7 +77,7 @@ export function DocumentList() {
       <EmptyState
         title="No documents yet"
         description="Upload your first document to get started with AI-powered analysis"
-        icon={<FileText className="h-8 w-8 text-muted-foreground" />}
+        icon={<FileText className="h-12 w-12 text-muted-foreground" />}
       />
     );
   }

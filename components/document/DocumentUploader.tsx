@@ -159,27 +159,47 @@ export function DocumentUploader({ onUploadComplete }: DocumentUploaderProps) {
       <Card
         {...getRootProps()}
         className={cn(
-          'border-2 border-dashed p-8 text-center cursor-pointer transition-colors',
-          isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'
+          'border-2 border-dashed p-12 text-center cursor-pointer transition-all duration-300 group',
+          isDragActive
+            ? 'border-primary bg-primary/5 shadow-lg scale-[1.02]'
+            : 'border-border/50 hover:border-primary/50 hover:bg-accent/50 hover:shadow-md'
         )}
       >
         <input {...getInputProps()} />
-        <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <p className="text-lg font-medium mb-2">{isDragActive ? 'Drop files here' : 'Drag and drop files here'}</p>
-        <p className="text-sm text-muted-foreground mb-4">or click to browse</p>
-        <p className="text-xs text-muted-foreground">Supports PDF, DOCX, XLSX (Max 50MB)</p>
+        <div className="flex flex-col items-center">
+          <div
+            className={cn(
+              'p-4 rounded-full mb-4 transition-all duration-300',
+              isDragActive ? 'bg-primary/20 scale-110' : 'bg-primary/10 group-hover:bg-primary/20'
+            )}
+          >
+            <Upload
+              className={cn(
+                'h-8 w-8 transition-all duration-300',
+                isDragActive ? 'text-primary scale-110' : 'text-muted-foreground group-hover:text-primary'
+              )}
+            />
+          </div>
+          <p className="text-lg font-semibold mb-2">{isDragActive ? 'Drop files here' : 'Drag and drop files here'}</p>
+          <p className="text-sm text-muted-foreground mb-4">or click to browse</p>
+          <p className="text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full inline-block">
+            Supports PDF, DOCX, XLSX (Max 50MB)
+          </p>
+        </div>
       </Card>
 
       {files.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {files.map((fileWithProgress, index) => (
             <Card
               key={index}
-              className="p-4"
+              className="p-4 border-border/50 hover:border-primary/50 transition-all duration-300"
             >
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <span className="text-2xl">{getFileIcon(fileWithProgress.file.type)}</span>
+                  <div className="flex-shrink-0">
+                    <span className="text-2xl">{getFileIcon(fileWithProgress.file.type)}</span>
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{fileWithProgress.file.name}</p>
                     <p className="text-xs text-muted-foreground">{formatFileSize(fileWithProgress.file.size)}</p>
@@ -189,28 +209,37 @@ export function DocumentUploader({ onUploadComplete }: DocumentUploaderProps) {
                   variant="ghost"
                   size="icon"
                   onClick={() => removeFile(index)}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
 
               {fileWithProgress.status === 'uploading' && (
-                <div className="space-y-1">
-                  <Progress value={fileWithProgress.progress} />
-                  <p className="text-xs text-muted-foreground">Uploading... {fileWithProgress.progress}%</p>
+                <div className="space-y-2">
+                  <Progress
+                    value={fileWithProgress.progress}
+                    className="h-2"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">Uploading...</p>
+                    <p className="text-xs font-medium text-primary">{fileWithProgress.progress}%</p>
+                  </div>
                 </div>
               )}
 
               {fileWithProgress.status === 'completed' && (
-                <div className="flex items-center space-x-2 text-sm text-green-600">
+                <div className="flex items-center space-x-2 text-sm text-primary bg-primary/10 px-3 py-2 rounded-lg">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Upload complete</span>
+                  <span className="font-medium">Upload complete</span>
                 </div>
               )}
 
               {fileWithProgress.status === 'error' && (
-                <p className="text-sm text-destructive">{fileWithProgress.error}</p>
+                <div className="flex items-center space-x-2 text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+                  <X className="h-4 w-4" />
+                  <span>{fileWithProgress.error}</span>
+                </div>
               )}
             </Card>
           ))}
