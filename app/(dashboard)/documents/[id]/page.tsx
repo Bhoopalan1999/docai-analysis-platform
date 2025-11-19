@@ -51,12 +51,16 @@ export default function DocumentViewerPage() {
         const data = await response.json();
         if (data.success) {
           setDocument(data.document);
-          setPdfUrl(data.url);
 
           // Only allow PDF viewing for now
           if (data.document.fileType !== 'pdf') {
             setError('Only PDF files can be viewed in the document viewer. Other file types will be supported soon.');
+            return;
           }
+
+          // Use proxy endpoint to avoid CORS issues - convert to absolute URL
+          const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+          setPdfUrl(`${baseUrl}/api/documents/${documentId}/view`);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load document');
@@ -68,6 +72,9 @@ export default function DocumentViewerPage() {
     fetchDocument();
   }, [documentId, router]);
 
+  console.log('pdfUrl', pdfUrl);
+  console.log('document', document);
+
   const handleDownload = async () => {
     if (!pdfUrl) return;
 
@@ -75,12 +82,12 @@ export default function DocumentViewerPage() {
       const response = await fetch(pdfUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const link = document?.createElement('a');
+      const link = window.document.createElement('a');
       link.href = url;
       link.download = document?.fileName || 'document.pdf';
-      document?.body.appendChild(link);
+      window.document.body.appendChild(link);
       link.click();
-      document?.body.removeChild(link);
+      window.document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Download failed:', err);
