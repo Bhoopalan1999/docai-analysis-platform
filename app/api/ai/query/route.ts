@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { query, documentIds, conversationId, modelStrategy, preferredModel } = body;
+    const { query, documentIds, conversationId, modelStrategy, preferredModel, minScore, topK } = body;
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return NextResponse.json({ error: 'Query is required and must be a non-empty string' }, { status: 400 });
@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
     const ragResult = await queryDocuments(query, {
       documentIds,
       userId: session.user.id,
-      topK: 5,
-      minScore: 0.5,
+      topK: topK || 5,
+      minScore: minScore || 0.3,
       modelOptions: {
         strategy: modelStrategy || 'fallback',
         preferredModel: preferredModel,

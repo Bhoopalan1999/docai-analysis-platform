@@ -44,7 +44,7 @@ export async function queryDocuments(query: string, options: RAGQueryOptions = {
     throw new Error('Query cannot be empty');
   }
 
-  const { documentIds, userId, topK = 5, minScore = 0.5 } = options;
+  const { documentIds, userId, topK = 5, minScore = 0.3 } = options;
 
   try {
     // Step 1: Generate embedding for the query
@@ -62,8 +62,32 @@ export async function queryDocuments(query: string, options: RAGQueryOptions = {
     // Step 3: Query Pinecone for relevant chunks
     const results = await queryVectors(queryEmbedding, topK, Object.keys(filter).length > 0 ? filter : undefined);
 
-    // Step 4: Filter by minimum score threshold
-    const filteredResults = results.filter((result) => result.score >= minScore);
+    // Step 4: Filter by minimum score threshold with progressive fallback
+    // This handles generic queries that have low semantic similarity scores
+    let filteredResults = results.filter((result) => result.score >= minScore);
+
+    // Fallback strategy: If no results found, progressively lower threshold
+    // This is a common industry practice for handling generic/abstract queries
+    if (filteredResults.length === 0 && results.length > 0) {
+      const fallbackThresholds = [minScore * 0.5, 0.1, 0.05];
+
+      for (const fallbackThreshold of fallbackThresholds) {
+        filteredResults = results.filter((result) => result.score >= fallbackThreshold);
+        if (filteredResults.length > 0) {
+          console.log(
+            `Using fallback threshold ${fallbackThreshold} (found ${filteredResults.length} chunks, original threshold: ${minScore})`
+          );
+          break;
+        }
+      }
+    }
+
+    // Final fallback: If still no results but we have chunks, use top chunks regardless of score
+    // This ensures we always return something if chunks exist, letting the LLM determine relevance
+    if (filteredResults.length === 0 && results.length > 0) {
+      console.warn(`No chunks above threshold, using top ${Math.min(3, results.length)} chunks regardless of score`);
+      filteredResults = results.slice(0, Math.min(3, results.length));
+    }
 
     if (filteredResults.length === 0) {
       throw new Error('No relevant document chunks found for the query');
