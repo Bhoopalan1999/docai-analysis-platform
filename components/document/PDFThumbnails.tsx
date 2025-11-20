@@ -18,15 +18,49 @@ export function PDFThumbnails({ totalPages, currentPage, onPageSelect, pdfUrl, c
   const [thumbnails, setThumbnails] = useState<Map<number, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to current page thumbnail when currentPage changes
+  // Debounced scroll to current page thumbnail when currentPage changes
   useEffect(() => {
-    if (containerRef.current && currentPage > 0) {
-      const thumbnailElement = containerRef.current.querySelector(`[data-page="${currentPage}"]`) as HTMLElement;
-      if (thumbnailElement) {
-        thumbnailElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+    // Clear any pending scroll
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
     }
+
+    // Debounce scroll update to prevent conflicts with PDF scrolling
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (containerRef.current && currentPage > 0) {
+        const thumbnailElement = containerRef.current.querySelector(`[data-page="${currentPage}"]`) as HTMLElement;
+        if (thumbnailElement && scrollAreaRef.current) {
+          // Use instant scroll instead of smooth to avoid lag
+          // Find the scrollable viewport within ScrollArea
+          const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+          if (viewport) {
+            const elementRect = thumbnailElement.getBoundingClientRect();
+            const viewportRect = viewport.getBoundingClientRect();
+            const scrollTop =
+              viewport.scrollTop +
+              (elementRect.top - viewportRect.top) -
+              viewportRect.height / 2 +
+              elementRect.height / 2;
+            viewport.scrollTo({
+              top: scrollTop,
+              behavior: 'auto', // Instant scroll for better performance
+            });
+          } else {
+            // Fallback to scrollIntoView with instant behavior
+            thumbnailElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+          }
+        }
+      }
+    }, 150); // 150ms debounce
+
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
   }, [currentPage]);
 
   useEffect(() => {
@@ -121,7 +155,10 @@ export function PDFThumbnails({ totalPages, currentPage, onPageSelect, pdfUrl, c
           Pages ({totalPages})
         </h3>
       </div>
-      <ScrollArea className="h-full">
+      <ScrollArea
+        className="h-full"
+        ref={scrollAreaRef}
+      >
         <div
           className="p-2 space-y-2"
           ref={containerRef}
