@@ -255,3 +255,63 @@ body {
   transform: translateY(-4px);
   box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.1), 0 10px 10px -5px rgba(99, 102, 241, 0.04);
 }
+
+/* Hide scrollbars for PDF viewer */
+.pdf-viewer-container {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.pdf-viewer-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+  width: 0;
+  height: 0;
+}
+
+.pdf-viewer-container::-webkit-scrollbar-track {
+  display: none;
+}
+
+.pdf-viewer-container::-webkit-scrollbar-thumb {
+  display: none;
+}
+
+/* Ensure PDF viewer fits tightly */
+.rpv-core__viewer {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.rpv-core__inner-page {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* PDF viewer rotation with performance optimization */
+.pdf-viewer-rotation {
+  transform-origin: center;
+  transform: rotate(var(--rotation, 0deg));
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: transform 0.2s ease-out;
+}
+
+/* Performance optimizations for PDF viewer */
+.pdf-viewer-container {
+  contain: layout style paint;
+  will-change: scroll-position;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Optimize PDF page rendering */
+.rpv-core__page-layer {
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rpv-core__page {
+  will-change: contents;
+}
