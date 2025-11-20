@@ -33,31 +33,6 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
   const [error, setError] = useState<string | null>(null);
   const [workerReady, setWorkerReady] = useState(false);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [pageNavPlugin, setPageNavPlugin] = useState<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [zoomPluginInst, setZoomPluginInst] = useState<any>(null);
-
-  // Initialize plugins on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined' && workerReady) {
-      Promise.all([
-        import('@react-pdf-viewer/page-navigation').then((mod) => mod.pageNavigationPlugin()),
-        import('@react-pdf-viewer/zoom').then((mod) => mod.zoomPlugin()),
-      ])
-        .then(([pageNav, zoom]) => {
-          setPageNavPlugin(pageNav);
-          setZoomPluginInst(zoom);
-        })
-        .catch((err) => {
-          console.error('Failed to load plugins:', err);
-        });
-    }
-  }, [workerReady]);
-
-  // Get plugin methods
-  const jumpToPage = pageNavPlugin?.jumpToPage;
-  const zoomTo = zoomPluginInst?.zoomTo;
 
   // Configure PDF.js worker
   useEffect(() => {
@@ -101,18 +76,18 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
           // Don't set error here, let the PDF viewer handle it
         });
 
-      // Timeout fallback - if PDF doesn't load in 30 seconds, show error
-      // Only trigger if still loading (check current state, not closure)
+      // Timeout fallback - if PDF doesn't load in 60 seconds, show error
+      // Increased timeout to account for plugin initialization and PDF loading
       loadingTimeoutRef.current = setTimeout(() => {
         setLoading((currentLoading) => {
           if (currentLoading) {
-            console.warn('PDF load timeout after 30 seconds');
+            console.warn('PDF load timeout after 60 seconds');
             setError('PDF took too long to load. Please try refreshing the page.');
             return false;
           }
           return currentLoading;
         });
-      }, 30000);
+      }, 60000);
 
       return () => {
         if (loadingTimeoutRef.current) {
@@ -141,9 +116,9 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
 
   const handleZoomChange = (newZoom: number) => {
     const roundedZoom = Math.round(newZoom * 10) / 10;
-    if (Math.abs(roundedZoom - zoom) > 0.05 && zoomTo) {
+    if (Math.abs(roundedZoom - zoom) > 0.05) {
       setZoom(roundedZoom);
-      zoomTo(roundedZoom);
+      // Zoom will be applied via defaultScale prop
     }
   };
 
@@ -154,23 +129,26 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
   };
 
   const handlePreviousPage = () => {
-    if (currentPage > 1 && jumpToPage) {
+    if (currentPage > 1) {
       const newPage = currentPage - 1;
-      jumpToPage(newPage - 1); // Plugin uses 0-based index
+      setCurrentPage(newPage);
+      // Use initialPage prop to navigate
     }
   };
 
   const handleNextPage = () => {
-    if (currentPage < totalPages && jumpToPage) {
+    if (currentPage < totalPages) {
       const newPage = currentPage + 1;
-      jumpToPage(newPage - 1); // Plugin uses 0-based index
+      setCurrentPage(newPage);
+      // Use initialPage prop to navigate
     }
   };
 
   const handlePageSelect = (page: number) => {
     const targetPageNum = Math.max(1, Math.min(page, totalPages || 1));
-    if (targetPageNum !== currentPage && totalPages > 0 && jumpToPage) {
-      jumpToPage(targetPageNum - 1); // Plugin uses 0-based index
+    if (targetPageNum !== currentPage && totalPages > 0) {
+      setCurrentPage(targetPageNum);
+      // Navigation will happen via initialPage prop
     }
   };
 
@@ -244,7 +222,7 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
             </div>
           )}
 
-          {!error && pdfUrl && workerReady && pageNavPlugin && zoomPluginInst && (
+          {!error && pdfUrl && workerReady && (
             <div className="flex-1 h-full w-full pdf-viewer-container">
               <Worker workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js">
                 <div
@@ -257,7 +235,9 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
                       Accept: 'application/pdf',
                     }}
                     withCredentials={true}
-                    plugins={[pageNavPlugin, zoomPluginInst]}
+                    key={`pdf-${currentPage}-${zoom}`}
+                    initialPage={Math.max(0, currentPage - 1)}
+                    defaultScale={zoom}
                     onDocumentLoad={(e: { doc?: { numPages?: number }; file?: unknown }) => {
                       try {
                         // Clear timeout since PDF loaded successfully
@@ -286,8 +266,6 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
                       }
                     }}
                     onPageChange={handlePageChange}
-                    initialPage={Math.max(0, currentPage - 1)}
-                    defaultScale={zoom}
                     renderError={(error) => {
                       console.error('PDF render error:', error);
                       setError(`Failed to render PDF: ${error.message || 'Unknown error'}`);
