@@ -19,7 +19,7 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 border-r bg-card/50 backdrop-blur-sm flex flex-col h-screen sticky top-0">
-      <div className="p-6 border-b">
+      <div className="p-6 border-b shrink-0">
         <Link
           href="/documents"
           className="flex items-center space-x-2 group"
@@ -31,7 +31,7 @@ export function Sidebar() {
         </Link>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto min-h-0">
         {navigation.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -62,7 +62,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t">
+      <div className="p-4 border-t flex-shrink-0">
         <Button
           className="w-full shadow-sm hover:shadow-md transition-all duration-200"
           asChild
