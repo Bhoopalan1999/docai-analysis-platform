@@ -303,6 +303,14 @@ body {
   will-change: scroll-position;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
+  overflow: hidden; /* Let react-pdf-viewer handle its own scrolling */
+}
+
+/* Ensure react-pdf-viewer's internal scroll container works */
+.rpv-core__viewer {
+  height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 
 /* Optimize PDF page rendering */

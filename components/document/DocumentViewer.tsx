@@ -33,6 +33,8 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
   const [error, setError] = useState<string | null>(null);
   const [workerReady, setWorkerReady] = useState(false);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const viewerContainerRef = useRef<HTMLDivElement>(null);
+  const [targetPage, setTargetPage] = useState<number | null>(null);
 
   // Configure PDF.js worker
   useEffect(() => {
@@ -128,11 +130,48 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     // Rotation will be handled via CSS transform on the container
   };
 
+  // Navigate to a specific page by scrolling to it
+  useEffect(() => {
+    if (targetPage !== null && totalPages > 0 && !loading) {
+      // Wait for PDF to render, then scroll to the target page
+      const scrollTimeout = setTimeout(() => {
+        try {
+          // Find the page element by aria-label
+          const pageElement = document.querySelector(`[role="region"][aria-label="Page ${targetPage}"]`) as HTMLElement;
+
+          if (pageElement) {
+            // Find the scrollable container - use the react-pdf-viewer's viewer class
+            const scrollContainer = document.querySelector('.rpv-core__viewer') as HTMLElement;
+
+            if (scrollContainer) {
+              const containerRect = scrollContainer.getBoundingClientRect();
+              const pageRect = pageElement.getBoundingClientRect();
+              const scrollTop = scrollContainer.scrollTop + (pageRect.top - containerRect.top) - 20; // 20px offset from top
+
+              scrollContainer.scrollTo({
+                top: scrollTop,
+                behavior: 'auto', // Instant scroll for better performance
+              });
+            } else {
+              // Fallback: scroll the page into view
+              pageElement.scrollIntoView({ behavior: 'auto', block: 'start' });
+            }
+          }
+        } catch (error) {
+          console.warn('Failed to scroll to page:', error);
+        }
+        setTargetPage(null);
+      }, 200); // Delay to ensure PDF pages are rendered
+
+      return () => clearTimeout(scrollTimeout);
+    }
+  }, [targetPage, totalPages, loading]);
+
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       const newPage = currentPage - 1;
       setCurrentPage(newPage);
-      // Use initialPage prop to navigate
+      setTargetPage(newPage);
     }
   };
 
@@ -140,7 +179,7 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     if (currentPage < totalPages) {
       const newPage = currentPage + 1;
       setCurrentPage(newPage);
-      // Use initialPage prop to navigate
+      setTargetPage(newPage);
     }
   };
 
@@ -148,7 +187,7 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     const targetPageNum = Math.max(1, Math.min(page, totalPages || 1));
     if (targetPageNum !== currentPage && totalPages > 0) {
       setCurrentPage(targetPageNum);
-      // Navigation will happen via initialPage prop
+      setTargetPage(targetPageNum);
     }
   };
 
@@ -223,7 +262,10 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
           )}
 
           {!error && pdfUrl && workerReady && (
-            <div className="flex-1 h-full w-full pdf-viewer-container">
+            <div
+              className="flex-1 h-full w-full pdf-viewer-container"
+              ref={viewerContainerRef}
+            >
               <Worker workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js">
                 <div
                   className="h-full w-full pdf-viewer-rotation"
@@ -235,8 +277,8 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
                       Accept: 'application/pdf',
                     }}
                     withCredentials={true}
-                    key={`pdf-${currentPage}-${zoom}`}
-                    initialPage={Math.max(0, currentPage - 1)}
+                    key={`pdf-${zoom}`}
+                    initialPage={0}
                     defaultScale={zoom}
                     onDocumentLoad={(e: { doc?: { numPages?: number }; file?: unknown }) => {
                       try {
