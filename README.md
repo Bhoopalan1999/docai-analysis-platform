@@ -1,4 +1,4 @@
-# DocAI - Intelligent Document Analysis Platform
+# DocAI :- Intelligent Document Analysis Platform
 
 [![DocAI Platform](./public/docai-thumbnail.png)](https://docai-analysis-platform.vercel.app/)
 
@@ -8,11 +8,11 @@
 
 ## ✨ Features
 
-- **Multi-Format Support** - Process PDFs, DOCX, Excel files, and scanned documents with OCR
-- **AI-Powered Q&A** - Ask questions and get instant answers powered by GPT-4, Claude, and Gemini
+- **Multi-Format Support** - Process PDFs, DOCX, Excel files and scanned documents with OCR
+- **AI-Powered Q&A** - Ask questions and get instant answers powered by GPT-4, Claude and Gemini
 - **Lightning Fast** - Optimized RAG pipeline processes documents in seconds
 - **Multi-Model AI** - Intelligent model selection with automatic fallback for reliability
-- **Advanced Analytics** - Extract entities, analyze sentiment, and visualize insights
+- **Advanced Analytics** - Extract entities, analyze sentiment and visualize insights
 - **Secure & Private** - End-to-end encryption with secure cloud storage
 
 ## 🚀 Tech Stack
@@ -108,7 +108,7 @@ Advanced retrieval-augmented generation with:
 
 ### Document Processing
 
-- **PDF:** Extract text, images, and metadata
+- **PDF:** Extract text, images and metadata
 - **DOCX:** Parse Word documents with formatting
 - **Excel:** Process spreadsheets and data tables
 - **OCR:** Handle scanned documents

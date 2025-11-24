@@ -11,6 +11,8 @@ export interface PDFToolbarProps {
   zoom: number;
   rotation: number;
   onZoomChange: (zoom: number) => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
   onRotate: () => void;
   onPreviousPage: () => void;
   onNextPage: () => void;
@@ -27,6 +29,8 @@ export function PDFToolbar({
   zoom,
   rotation,
   onZoomChange,
+  onZoomIn,
+  onZoomOut,
   onRotate,
   onPreviousPage,
   onNextPage,
@@ -40,14 +44,6 @@ export function PDFToolbar({
     onZoomChange(values[0]);
   };
 
-  const zoomIn = () => {
-    onZoomChange(Math.min(zoom + 0.25, 3));
-  };
-
-  const zoomOut = () => {
-    onZoomChange(Math.max(zoom - 0.25, 0.5));
-  };
-
   return (
     <div className={cn('flex items-center gap-2 p-2 bg-background border-b border-border', className)}>
       {/* Page Navigation */}
@@ -56,20 +52,22 @@ export function PDFToolbar({
           variant="ghost"
           size="sm"
           onClick={onPreviousPage}
-          disabled={currentPage <= 1}
+          disabled={currentPage <= 1 || totalPages === 0}
           className="h-8 w-8 p-0"
+          title="Previous page"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="text-sm font-medium min-w-[80px] text-center">
-          {currentPage} / {totalPages}
+          {totalPages > 0 ? `${currentPage} / ${totalPages}` : '0 / 0'}
         </span>
         <Button
           variant="ghost"
           size="sm"
           onClick={onNextPage}
-          disabled={currentPage >= totalPages}
+          disabled={currentPage >= totalPages || totalPages === 0}
           className="h-8 w-8 p-0"
+          title="Next page"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -82,9 +80,10 @@ export function PDFToolbar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={zoomOut}
+          onClick={onZoomOut}
           disabled={zoom <= 0.5}
           className="h-8 w-8 p-0"
+          title="Zoom out"
         >
           <ZoomOut className="h-4 w-4" />
         </Button>
@@ -101,9 +100,10 @@ export function PDFToolbar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={zoomIn}
+          onClick={onZoomIn}
           disabled={zoom >= 3}
           className="h-8 w-8 p-0"
+          title="Zoom in"
         >
           <ZoomIn className="h-4 w-4" />
         </Button>
@@ -118,6 +118,7 @@ export function PDFToolbar({
         size="sm"
         onClick={onRotate}
         className="h-8 px-3"
+        title="Rotate clockwise"
       >
         <RotateCw className="h-4 w-4 mr-2" />
         <span className="text-xs">{rotation}°</span>
@@ -131,6 +132,7 @@ export function PDFToolbar({
         size="sm"
         onClick={onToggleThumbnails}
         className={cn('h-8 px-3', showThumbnails && 'bg-accent')}
+        title={showThumbnails ? 'Hide thumbnails' : 'Show thumbnails'}
       >
         <FileText className="h-4 w-4 mr-2" />
         <span className="text-xs">Pages</span>
@@ -142,6 +144,7 @@ export function PDFToolbar({
         size="sm"
         onClick={onDownload}
         className="h-8 px-3"
+        title="Download PDF"
       >
         <Download className="h-4 w-4 mr-2" />
         <span className="text-xs">Download</span>
@@ -152,6 +155,7 @@ export function PDFToolbar({
         size="sm"
         onClick={onFullscreen}
         className="h-8 px-3"
+        title="Fullscreen"
       >
         <Maximize className="h-4 w-4" />
       </Button>

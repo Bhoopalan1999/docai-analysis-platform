@@ -6,9 +6,14 @@ import { PDFToolbar } from './PDFToolbar';
 import { PDFThumbnails } from './PDFThumbnails';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import type { LoadError } from '@react-pdf-viewer/core';
+import type { LoadError, Plugin, PluginOnDocumentLoad, PluginOnTextLayerRender } from '@react-pdf-viewer/core';
 import { pageNavigationPlugin } from '@react-pdf-viewer/page-navigation';
 import { zoomPlugin } from '@react-pdf-viewer/zoom';
+
+// Import CSS styles for plugins (CRITICAL for proper functionality)
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/page-navigation/lib/styles/index.css';
+import '@react-pdf-viewer/zoom/lib/styles/index.css';
 
 // Dynamically import PDF viewer to avoid SSR issues
 const PDFViewer = dynamic(() => import('@react-pdf-viewer/core').then((mod) => mod.Viewer), { ssr: false });
@@ -29,24 +34,134 @@ export interface DocumentViewerProps {
 export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: DocumentViewerProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const totalPagesRef = useRef(totalPages);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [showThumbnails, setShowThumbnails] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [workerReady, setWorkerReady] = useState(false);
+  const [viewerReady, setViewerReady] = useState(false);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const viewerContainerRef = useRef<HTMLDivElement>(null);
   const rotationRef = useRef<HTMLDivElement>(null);
-  const pageNavigationPluginRef = useRef<ReturnType<typeof pageNavigationPlugin> | null>(null);
-  const zoomPluginRef = useRef<ReturnType<typeof zoomPlugin> | null>(null);
-  const pageNavigationPluginInstance = pageNavigationPlugin();
-  const zoomPluginInstance = zoomPlugin();
+
+  // Use refs to track the latest state without causing re-renders in the plugin
+  const currentPageCallbackRef = useRef((page: number) => {
+    console.log('📄 Page changed via scroll:', page);
+    setCurrentPage(page);
+  });
+
+  // Update callbacks when state changes
+  useEffect(() => {
+    currentPageCallbackRef.current = (page: number) => {
+      if (page !== currentPage && page > 0) {
+        console.log('📄 Page changed via scroll:', page);
+        setCurrentPage(page);
+      }
+    };
+  }, [currentPage]);
+
+  // Create a custom plugin to track page and zoom changes using refs
+  const stateTrackerPlugin = useRef<Plugin>({
+    install: () => {
+      console.log('🔧 State tracker plugin installing...');
+
+      return {
+        onDocumentLoad: (props: PluginOnDocumentLoad) => {
+          console.log('📚 Document loaded in plugin:', props.doc.numPages);
+
+          // Mark viewer as ready after document loads and pages are rendered
+          setTimeout(() => {
+            setViewerReady(true);
+            console.log('✅ Viewer is now ready for navigation');
+
+            // Log all page elements for debugging
+            const allPages = document.querySelectorAll('.rpv-core__page-layer');
+            console.log(`📄 Found ${allPages.length} page elements in DOM`);
+          }, 1000);
+        },
+        onTextLayerRender: (props: PluginOnTextLayerRender) => {
+          // Use callback ref to avoid stale closures
+          const newPage = props.pageIndex + 1; // 0-based to 1-based
+          currentPageCallbackRef.current(newPage);
+        },
+      };
+    },
+  }).current;
+
+  // Refs to hold plugin instances (stable across renders)
+  const pageNavigationPluginRef = useRef(pageNavigationPlugin());
+  const zoomPluginRef = useRef(zoomPlugin());
+
+  // Extract zoom method from plugin (zoom seems to work, but page navigation doesn't)
+  const zoomTo = zoomPluginRef.current.zoomTo;
+
+  // Get the viewer's scroll container and page elements
+  const getViewerScrollContainer = useCallback(() => {
+    return document.querySelector('.rpv-core__viewer') as HTMLElement | null;
+  }, []);
+
+  const getPageElement = useCallback((pageIndex: number) => {
+    // Try multiple selectors as react-pdf-viewer uses different class names
+    const selectors = [
+      `.rpv-core__page-layer[data-page-index="${pageIndex}"]`,
+      `[data-testid="core__page-layer-${pageIndex}"]`,
+      `.rpv-core__page-layer:nth-child(${pageIndex + 1})`,
+    ];
+
+    for (const selector of selectors) {
+      const element = document.querySelector(selector) as HTMLElement | null;
+      if (element) return element;
+    }
+    return null;
+  }, []);
+
+  // Add scroll listener to track page changes
+  useEffect(() => {
+    if (!viewerReady || totalPages === 0) return;
+
+    const scrollContainer = getViewerScrollContainer();
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      // Find which page is currently in view
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const containerCenter = containerRect.top + containerRect.height / 2;
+
+      let closestPage = 1;
+      let closestDistance = Infinity;
+
+      for (let i = 0; i < totalPages; i++) {
+        const pageElement = getPageElement(i);
+        if (pageElement) {
+          const pageRect = pageElement.getBoundingClientRect();
+          const pageCenter = pageRect.top + pageRect.height / 2;
+          const distance = Math.abs(pageCenter - containerCenter);
+
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestPage = i + 1; // Convert to 1-based
+          }
+        }
+      }
+
+      if (closestPage !== currentPage) {
+        console.log('📄 Page changed via scroll:', closestPage);
+        setCurrentPage(closestPage);
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+
+    // Also check on initial load
+    setTimeout(handleScroll, 1000);
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [viewerReady, totalPages, currentPage, getViewerScrollContainer, getPageElement]);
 
   // Configure PDF.js worker
   useEffect(() => {
-    // Set worker source for PDF.js
     if (typeof window !== 'undefined') {
       import('pdfjs-dist')
         .then((pdfjs) => {
@@ -61,19 +176,18 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     }
   }, []);
 
-  // Reset loading state when PDF URL changes and verify URL accessibility
+  // Reset loading state when PDF URL changes
   useEffect(() => {
     if (pdfUrl && workerReady) {
       setLoading(true);
       setError(null);
       console.log('PDF URL set, waiting for document load:', pdfUrl);
 
-      // Clear any existing timeout
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
 
-      // Test if URL is accessible
+      // Test URL accessibility
       fetch(pdfUrl, { method: 'HEAD', credentials: 'include' })
         .then((response) => {
           if (!response.ok) {
@@ -83,11 +197,9 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
         })
         .catch((err) => {
           console.error('PDF URL accessibility check failed:', err);
-          // Don't set error here, let the PDF viewer handle it
         });
 
-      // Timeout fallback - if PDF doesn't load in 60 seconds, show error
-      // Increased timeout to account for plugin initialization and PDF loading
+      // 60 second timeout
       loadingTimeoutRef.current = setTimeout(() => {
         setLoading((currentLoading) => {
           if (currentLoading) {
@@ -108,7 +220,7 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     }
   }, [pdfUrl, workerReady]);
 
-  // Cleanup loading timeout on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (loadingTimeoutRef.current) {
@@ -117,90 +229,14 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     };
   }, []);
 
+  // Apply rotation via CSS
   useEffect(() => {
     if (rotationRef.current) {
       rotationRef.current.style.setProperty('--rotation', `${rotation}deg`);
     }
   }, [rotation]);
 
-  useEffect(() => {
-    totalPagesRef.current = totalPages;
-  }, [totalPages]);
-
-  useEffect(() => {
-    pageNavigationPluginRef.current = pageNavigationPluginInstance;
-    zoomPluginRef.current = zoomPluginInstance;
-  }, [pageNavigationPluginInstance, pageNavigationPluginRef, zoomPluginInstance, zoomPluginRef]);
-
-  const handlePageChange = useCallback((e: { currentPage: number }) => {
-    setCurrentPage((prevPage) => {
-      const boundedTotalPages = totalPagesRef.current || Infinity;
-      const newPage = Math.min(Math.max(1, e.currentPage + 1), boundedTotalPages);
-      return newPage !== prevPage ? newPage : prevPage;
-    });
-  }, []);
-
-  const handleZoomChange = useCallback((newZoom: number) => {
-    const roundedZoom = Math.round(newZoom * 10) / 10;
-    setZoom((prevZoom) => {
-      if (Math.abs(roundedZoom - prevZoom) > 0.05) {
-        zoomPluginRef.current?.zoomTo(roundedZoom);
-        return roundedZoom;
-      }
-      return prevZoom;
-    });
-  }, []);
-
-  const handleRotate = () => {
-    const newRotation = (rotation + 90) % 360;
-    setRotation(newRotation);
-    // Rotation will be handled via CSS transform on the container
-  };
-
-  const handlePreviousPage = useCallback(() => {
-    if (currentPage > 1) {
-      pageNavigationPluginRef.current?.jumpToPreviousPage();
-    }
-  }, [currentPage]);
-
-  const handleNextPage = useCallback(() => {
-    if (currentPage < totalPages) {
-      pageNavigationPluginRef.current?.jumpToNextPage();
-    }
-  }, [currentPage, totalPages]);
-
-  const handlePageSelect = useCallback(
-    (page: number) => {
-      if (totalPages === 0) {
-        return;
-      }
-      const targetPageNum = Math.max(1, Math.min(page, totalPages));
-      if (targetPageNum !== currentPage) {
-        pageNavigationPluginRef.current?.jumpToPage(targetPageNum - 1);
-      }
-    },
-    [currentPage, totalPages]
-  );
-
-  const handleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  const handleDownload = useCallback(() => {
-    if (onDownload) {
-      onDownload();
-    } else {
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.download = fileName;
-      link.click();
-    }
-  }, [onDownload, pdfUrl, fileName]);
-
+  // Handle document load
   const handleDocumentLoad = useCallback((e: { doc?: { numPages?: number }; file?: unknown }) => {
     try {
       if (loadingTimeoutRef.current) {
@@ -212,10 +248,8 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
       if (doc && typeof doc.numPages === 'number') {
         const numPages = doc.numPages;
         setTotalPages(numPages);
-        setCurrentPage((prev) => {
-          const validPage = Math.max(1, Math.min(prev, numPages));
-          return validPage !== prev ? validPage : prev;
-        });
+        setCurrentPage(1); // Reset to first page
+        console.log('📚 PDF loaded successfully, total pages:', numPages);
       }
     } catch (err) {
       console.error('Error processing document load:', err);
@@ -225,13 +259,7 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     }
   }, []);
 
-  const handlePDFZoom = useCallback((event: { scale: number }) => {
-    const roundedScale = Math.round(event.scale * 10) / 10;
-    setZoom((prevZoom) => {
-      return Math.abs(roundedScale - prevZoom) > 0.01 ? roundedScale : prevZoom;
-    });
-  }, []);
-
+  // Handle render errors
   const handleRenderError = useCallback((renderError: LoadError): React.ReactElement => {
     console.error('PDF render error:', renderError);
     setError(`Failed to render PDF: ${renderError.message || 'Unknown error'}`);
@@ -244,6 +272,126 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     );
   }, []);
 
+  // Toolbar handlers - use plugin methods (zoom plugin seems to work)
+  const handleZoomIn = useCallback(() => {
+    const newZoom = Math.min(zoom + 0.25, 3);
+    console.log('🔍 Zoom In clicked, new zoom:', newZoom);
+    setZoom(newZoom);
+    zoomTo(newZoom);
+  }, [zoom, zoomTo]);
+
+  const handleZoomOut = useCallback(() => {
+    const newZoom = Math.max(zoom - 0.25, 0.5);
+    console.log('🔍 Zoom Out clicked, new zoom:', newZoom);
+    setZoom(newZoom);
+    zoomTo(newZoom);
+  }, [zoom, zoomTo]);
+
+  const handleZoomSliderChange = useCallback(
+    (newZoom: number) => {
+      console.log('🔍 Zoom slider changed, new zoom:', newZoom);
+      setZoom(newZoom);
+      zoomTo(newZoom);
+    },
+    [zoomTo]
+  );
+
+  const handleRotate = useCallback(() => {
+    const newRotation = (rotation + 90) % 360;
+    setRotation(newRotation);
+  }, [rotation]);
+
+  const handlePreviousPage = useCallback(() => {
+    if (currentPage > 1) {
+      console.log('⬅️ Jumping to previous page:', currentPage - 1);
+      const targetPage = currentPage - 2; // 0-based index
+      const pageElement = getPageElement(targetPage);
+      const scrollContainer = getViewerScrollContainer();
+
+      if (pageElement && scrollContainer) {
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const elementRect = pageElement.getBoundingClientRect();
+        const scrollTop = scrollContainer.scrollTop + (elementRect.top - containerRect.top);
+
+        scrollContainer.scrollTo({
+          top: scrollTop,
+          behavior: 'smooth',
+        });
+        setCurrentPage(currentPage - 1);
+      } else {
+        console.warn('⬅️ Could not find page element or scroll container');
+      }
+    }
+  }, [currentPage, getPageElement, getViewerScrollContainer]);
+
+  const handleNextPage = useCallback(() => {
+    if (currentPage < totalPages) {
+      console.log('➡️ Jumping to next page:', currentPage + 1);
+      const targetPage = currentPage; // 0-based index
+      const pageElement = getPageElement(targetPage);
+      const scrollContainer = getViewerScrollContainer();
+
+      if (pageElement && scrollContainer) {
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const elementRect = pageElement.getBoundingClientRect();
+        const scrollTop = scrollContainer.scrollTop + (elementRect.top - containerRect.top);
+
+        scrollContainer.scrollTo({
+          top: scrollTop,
+          behavior: 'smooth',
+        });
+        setCurrentPage(currentPage + 1);
+      } else {
+        console.warn('➡️ Could not find page element or scroll container');
+      }
+    }
+  }, [currentPage, totalPages, getPageElement, getViewerScrollContainer]);
+
+  const handlePageSelect = useCallback(
+    (page: number) => {
+      if (page >= 1 && page <= totalPages) {
+        console.log('🎯 Jumping to page:', page);
+        const targetPage = page - 1; // 0-based index
+        const pageElement = getPageElement(targetPage);
+        const scrollContainer = getViewerScrollContainer();
+
+        if (pageElement && scrollContainer) {
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const elementRect = pageElement.getBoundingClientRect();
+          const scrollTop = scrollContainer.scrollTop + (elementRect.top - containerRect.top);
+
+          scrollContainer.scrollTo({
+            top: scrollTop,
+            behavior: 'smooth',
+          });
+          setCurrentPage(page);
+        } else {
+          console.warn('🎯 Could not find page element or scroll container for page:', page);
+        }
+      }
+    },
+    [totalPages, getPageElement, getViewerScrollContainer]
+  );
+
+  const handleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }, []);
+
+  const handleDownload = useCallback(() => {
+    if (onDownload) {
+      onDownload();
+    } else {
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.download = fileName;
+      link.click();
+    }
+  }, [onDownload, pdfUrl, fileName]);
+
   return (
     <div className={cn('flex flex-col h-full bg-background', className)}>
       {/* Toolbar */}
@@ -252,7 +400,9 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
         totalPages={totalPages}
         zoom={zoom}
         rotation={rotation}
-        onZoomChange={handleZoomChange}
+        onZoomChange={handleZoomSliderChange}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
         onRotate={handleRotate}
         onPreviousPage={handlePreviousPage}
         onNextPage={handleNextPage}
@@ -295,14 +445,15 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
           )}
 
           {!error && pdfUrl && workerReady && (
-            <div
-              className="flex-1 h-full w-full pdf-viewer-container"
-              ref={viewerContainerRef}
-            >
+            <div className="flex-1 h-full w-full pdf-viewer-container">
               <Worker workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js">
                 <div
                   className="h-full w-full pdf-viewer-rotation"
                   ref={rotationRef}
+                  style={{
+                    transform: `rotate(${rotation}deg)`,
+                    transition: 'transform 0.3s ease',
+                  }}
                 >
                   <PDFViewer
                     fileUrl={pdfUrl}
@@ -311,11 +462,9 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
                     }}
                     withCredentials={true}
                     initialPage={0}
-                    defaultScale={zoom}
-                    plugins={[pageNavigationPluginInstance, zoomPluginInstance]}
+                    defaultScale={1}
+                    plugins={[pageNavigationPluginRef.current, zoomPluginRef.current, stateTrackerPlugin]}
                     onDocumentLoad={handleDocumentLoad}
-                    onZoom={handlePDFZoom}
-                    onPageChange={handlePageChange}
                     renderError={handleRenderError}
                   />
                 </div>

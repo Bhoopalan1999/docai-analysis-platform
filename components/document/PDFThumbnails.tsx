@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { FileText } from 'lucide-react';
@@ -20,41 +20,39 @@ export function PDFThumbnails({ totalPages, currentPage, onPageSelect, pdfUrl, c
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const isScrollingProgrammatically = useRef(false);
 
-  // Debounced scroll to current page thumbnail when currentPage changes
+  // Scroll to current page thumbnail (debounced)
   useEffect(() => {
-    // Clear any pending scroll
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current);
     }
 
-    // Debounce scroll update to prevent conflicts with PDF scrolling
-    scrollTimeoutRef.current = setTimeout(() => {
-      if (containerRef.current && currentPage > 0) {
-        const thumbnailElement = containerRef.current.querySelector(`[data-page="${currentPage}"]`) as HTMLElement;
-        if (thumbnailElement && scrollAreaRef.current) {
-          // Use instant scroll instead of smooth to avoid lag
-          // Find the scrollable viewport within ScrollArea
-          const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
-          if (viewport) {
-            const elementRect = thumbnailElement.getBoundingClientRect();
-            const viewportRect = viewport.getBoundingClientRect();
-            const scrollTop =
-              viewport.scrollTop +
-              (elementRect.top - viewportRect.top) -
-              viewportRect.height / 2 +
-              elementRect.height / 2;
-            viewport.scrollTo({
-              top: scrollTop,
-              behavior: 'auto', // Instant scroll for better performance
-            });
-          } else {
-            // Fallback to scrollIntoView with instant behavior
-            thumbnailElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+    // Only scroll if not already scrolling programmatically
+    if (!isScrollingProgrammatically.current) {
+      scrollTimeoutRef.current = setTimeout(() => {
+        if (containerRef.current && currentPage > 0) {
+          const thumbnailElement = containerRef.current.querySelector(`[data-page="${currentPage}"]`) as HTMLElement;
+          if (thumbnailElement && scrollAreaRef.current) {
+            const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
+            if (viewport) {
+              const elementRect = thumbnailElement.getBoundingClientRect();
+              const viewportRect = viewport.getBoundingClientRect();
+              const scrollTop =
+                viewport.scrollTop +
+                (elementRect.top - viewportRect.top) -
+                viewportRect.height / 2 +
+                elementRect.height / 2;
+              
+              viewport.scrollTo({
+                top: scrollTop,
+                behavior: 'smooth',
+              });
+            }
           }
         }
-      }
-    }, 150); // 150ms debounce
+      }, 100);
+    }
 
     return () => {
       if (scrollTimeoutRef.current) {
@@ -63,40 +61,43 @@ export function PDFThumbnails({ totalPages, currentPage, onPageSelect, pdfUrl, c
     };
   }, [currentPage]);
 
+  // Load thumbnails on mount
   useEffect(() => {
     const loadThumbnails = async () => {
-      try {
-        // Dynamically import pdfjs-dist
-        const pdfjsLib = await import('pdfjs-dist');
+      if (!pdfUrl || totalPages === 0) return;
 
-        // Set worker source
+      try {
+        const pdfjsLib = await import('pdfjs-dist');
         pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-        // Load PDF document
         const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
         const pdf = await loadingTask.promise;
 
         const newThumbnails = new Map<number, string>();
 
-        // Generate thumbnails for first 10 pages, then lazy load others
+        // Load first 10 pages immediately
         const pagesToLoad = Math.min(totalPages, 10);
         for (let pageNum = 1; pageNum <= pagesToLoad; pageNum++) {
-          const page = await pdf.getPage(pageNum);
-          const viewport = page.getViewport({ scale: 0.5 });
+          try {
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 0.5 });
 
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          if (!context) continue;
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            if (!context) continue;
 
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
 
-          await page.render({
-            canvasContext: context,
-            viewport: viewport,
-          }).promise;
+            await page.render({
+              canvasContext: context,
+              viewport: viewport,
+            }).promise;
 
-          newThumbnails.set(pageNum, canvas.toDataURL());
+            newThumbnails.set(pageNum, canvas.toDataURL());
+          } catch (err) {
+            console.error(`Failed to load thumbnail for page ${pageNum}:`, err);
+          }
         }
 
         setThumbnails(newThumbnails);
@@ -107,45 +108,74 @@ export function PDFThumbnails({ totalPages, currentPage, onPageSelect, pdfUrl, c
       }
     };
 
-    if (pdfUrl && totalPages > 0) {
-      loadThumbnails();
-    }
+    loadThumbnails();
   }, [pdfUrl, totalPages]);
 
-  const loadThumbnail = async (pageNum: number) => {
-    if (thumbnails.has(pageNum)) return;
+  // Lazy load individual thumbnail
+  const loadThumbnail = useCallback(
+    async (pageNum: number) => {
+      if (thumbnails.has(pageNum)) return;
 
-    try {
-      const pdfjsLib = await import('pdfjs-dist');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      try {
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-      const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
-      const pdf = await loadingTask.promise;
+        const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 0.5 });
 
-      const page = await pdf.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 0.5 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) return;
 
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      if (!context) return;
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
 
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
+        await page.render({
+          canvasContext: context,
+          viewport: viewport,
+        }).promise;
 
-      await page.render({
-        canvasContext: context,
-        viewport: viewport,
-      }).promise;
+        setThumbnails((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(pageNum, canvas.toDataURL());
+          return newMap;
+        });
+      } catch (error) {
+        console.error(`Failed to load thumbnail for page ${pageNum}:`, error);
+      }
+    },
+    [pdfUrl, thumbnails]
+  );
 
-      setThumbnails((prev) => {
-        const newMap = new Map(prev);
-        newMap.set(pageNum, canvas.toDataURL());
-        return newMap;
-      });
-    } catch (error) {
-      console.error(`Failed to load thumbnail for page ${pageNum}:`, error);
-    }
-  };
+  // Handle thumbnail click
+  const handleThumbnailClick = useCallback(
+    (pageNum: number) => {
+      isScrollingProgrammatically.current = true;
+      onPageSelect(pageNum);
+      
+      // Reset flag after a delay
+      setTimeout(() => {
+        isScrollingProgrammatically.current = false;
+      }, 500);
+    },
+    [onPageSelect]
+  );
+
+  if (totalPages === 0) {
+    return (
+      <div className={cn('w-48 border-r border-border bg-muted/30', className)}>
+        <div className="p-3 border-b border-border">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Pages (0)
+          </h3>
+        </div>
+        <div className="p-4 text-center text-sm text-muted-foreground">No pages to display</div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('w-48 border-r border-border bg-muted/30', className)}>
@@ -174,7 +204,7 @@ export function PDFThumbnails({ totalPages, currentPage, onPageSelect, pdfUrl, c
                 <div
                   key={pageNum}
                   data-page={pageNum}
-                  onClick={() => onPageSelect(pageNum)}
+                  onClick={() => handleThumbnailClick(pageNum)}
                   onMouseEnter={() => loadThumbnail(pageNum)}
                   className={cn(
                     'cursor-pointer rounded-md border-2 transition-all p-2',
@@ -185,8 +215,8 @@ export function PDFThumbnails({ totalPages, currentPage, onPageSelect, pdfUrl, c
                 >
                   {thumbnail ? (
                     <Image
-                      width={100}
-                      height={100}
+                      width={160}
+                      height={200}
                       loading="lazy"
                       src={thumbnail}
                       alt={`Page ${pageNum}`}
