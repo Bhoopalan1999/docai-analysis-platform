@@ -166,108 +166,218 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     return null;
   }, []);
 
-  // Use IntersectionObserver to track which page is visible
+  // Use IntersectionObserver and scroll listener to track which page is visible
   useEffect(() => {
     if (!viewerReady || totalPages === 0) return;
 
-    // Debug: Log DOM structure
-    setTimeout(() => {
-      const scrollContainer = getViewerScrollContainer();
-      const allPages = document.querySelectorAll('.rpv-core__page-layer');
-      console.log('🔍 DOM Debug Info:');
-      console.log('  - Scroll container found:', !!scrollContainer);
-      console.log('  - Total page elements found:', allPages.length);
-      console.log('  - Expected pages:', totalPages);
+    let scrollTimeout: NodeJS.Timeout | null = null;
+    let pollInterval: NodeJS.Timeout | null = null;
+    const observers: IntersectionObserver[] = [];
+    let scrollContainer: HTMLElement | null = null;
+    let handleScroll: (() => void) | null = null;
+    let mutationObserver: MutationObserver | null = null;
 
-      if (scrollContainer) {
-        console.log('  - Scroll container class:', scrollContainer.className);
-        console.log('  - Scroll container scrollHeight:', scrollContainer.scrollHeight);
-        console.log('  - Scroll container clientHeight:', scrollContainer.clientHeight);
+    // Wait a bit for DOM to be fully ready
+    const setupTimeout = setTimeout(() => {
+      scrollContainer = getViewerScrollContainer();
+      if (!scrollContainer) {
+        console.warn('⚠️ Scroll container not found for scroll tracking');
+        return;
       }
 
-      allPages.forEach((page, index) => {
-        const htmlPage = page as HTMLElement;
-        console.log(`  - Page ${index}:`, {
-          className: htmlPage.className,
-          dataAttributes: Array.from(htmlPage.attributes)
-            .filter((attr) => attr.name.startsWith('data-'))
-            .map((attr) => `${attr.name}="${attr.value}"`),
-        });
-      });
-    }, 2000);
+      console.log('✅ Setting up scroll tracking on:', scrollContainer.className);
 
-    // Use IntersectionObserver for better page tracking
-    const observers: IntersectionObserver[] = [];
-    const pageElements: HTMLElement[] = [];
+      // Debounced scroll handler
+      handleScroll = () => {
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout);
+        }
 
-    for (let i = 0; i < totalPages; i++) {
-      const pageElement = getPageElement(i);
-      if (pageElement) {
-        pageElements.push(pageElement);
+        scrollTimeout = setTimeout(() => {
+          if (!scrollContainer) return;
 
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const viewportTop = containerRect.top;
+          const viewportBottom = containerRect.bottom;
+          const viewportCenter = viewportTop + containerRect.height / 2;
+
+          let closestPage = 1;
+          let closestDistance = Infinity;
+          let maxVisibleRatio = 0;
+
+          // Find the page with the most visible area in the viewport
+          for (let i = 0; i < totalPages; i++) {
+            const pageElement = getPageElement(i);
+            if (pageElement) {
+              const pageRect = pageElement.getBoundingClientRect();
+              const pageTop = pageRect.top;
+              const pageBottom = pageRect.bottom;
+              const pageCenter = pageTop + pageRect.height / 2;
+
+              // Calculate how much of the page is visible
+              const visibleTop = Math.max(viewportTop, pageTop);
+              const visibleBottom = Math.min(viewportBottom, pageBottom);
+              const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+              const visibleRatio = visibleHeight / pageRect.height;
+
+              // Also calculate distance from viewport center
+              const distance = Math.abs(pageCenter - viewportCenter);
+
+              // Prefer pages with more visibility, but if similar, use distance
+              if (visibleRatio > maxVisibleRatio || (visibleRatio === maxVisibleRatio && distance < closestDistance)) {
+                maxVisibleRatio = visibleRatio;
+                closestDistance = distance;
+                closestPage = i + 1;
+              }
+            }
+          }
+
+          if (closestPage !== currentPage && closestPage > 0) {
+            console.log(
+              '📄 Page changed via scroll:',
+              closestPage,
+              '(visible ratio:',
+              maxVisibleRatio.toFixed(2) + ')'
+            );
+            setCurrentPage(closestPage);
+          }
+        }, 150); // Debounce by 150ms
+      };
+
+      // Function to observe a page element
+      const observePage = (pageIndex: number, pageElement: HTMLElement) => {
         const observer = new IntersectionObserver(
           (entries) => {
             entries.forEach((entry) => {
-              if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-                const newPage = i + 1; // Convert to 1-based
-                if (newPage !== currentPage) {
-                  console.log('📄 Page changed via IntersectionObserver:', newPage);
-                  setCurrentPage(newPage);
+              // Use viewport-based detection (more reliable)
+              if (entry.isIntersecting) {
+                const newPage = pageIndex + 1;
+                const ratio = entry.intersectionRatio;
+                const viewportHeight = entry.rootBounds?.height || window.innerHeight;
+                const visibleHeight = entry.boundingClientRect.height * ratio;
+
+                // Update if page is significantly visible (at least 30% or more than half viewport height)
+                if (ratio > 0.3 || visibleHeight > viewportHeight * 0.5) {
+                  if (newPage !== currentPage) {
+                    console.log(
+                      '📄 Page changed via IntersectionObserver:',
+                      newPage,
+                      '(ratio:',
+                      ratio.toFixed(2),
+                      'visible:',
+                      visibleHeight.toFixed(0) + 'px)'
+                    );
+                    setCurrentPage(newPage);
+                  }
                 }
               }
             });
           },
           {
-            root: getViewerScrollContainer(),
-            threshold: [0, 0.25, 0.5, 0.75, 1],
+            root: null, // Use viewport instead of scroll container (more reliable)
+            rootMargin: '-20% 0px -20% 0px', // Consider pages in the center 60% of viewport
+            threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
           }
         );
 
         observer.observe(pageElement);
         observers.push(observer);
+      };
+
+      // Use IntersectionObserver as primary method - observe existing pages
+      for (let i = 0; i < totalPages; i++) {
+        const pageElement = getPageElement(i);
+        if (pageElement) {
+          observePage(i, pageElement);
+        }
       }
-    }
 
-    // Fallback: Also add scroll listener
-    const scrollContainer = getViewerScrollContainer();
-    if (scrollContainer) {
-      const handleScroll = () => {
-        const containerRect = scrollContainer.getBoundingClientRect();
-        const containerCenter = containerRect.top + containerRect.height / 2;
-
-        let closestPage = 1;
-        let closestDistance = Infinity;
-
+      // Set up a MutationObserver to watch for new pages being added (lazy loading)
+      mutationObserver = new MutationObserver(() => {
+        // Re-check for pages that might have been added
         for (let i = 0; i < totalPages; i++) {
           const pageElement = getPageElement(i);
           if (pageElement) {
-            const pageRect = pageElement.getBoundingClientRect();
-            const pageCenter = pageRect.top + pageRect.height / 2;
-            const distance = Math.abs(pageCenter - containerCenter);
-
-            if (distance < closestDistance) {
-              closestDistance = distance;
-              closestPage = i + 1;
+            // Simple check: if we have fewer observers than pages, observe this one
+            // This is a simplified approach - in production you might want to track which pages are observed
+            if (observers.length < totalPages) {
+              observePage(i, pageElement);
             }
           }
         }
+      });
 
-        if (closestPage !== currentPage) {
-          console.log('📄 Page changed via scroll:', closestPage);
-          setCurrentPage(closestPage);
+      // Observe the scroll container for new page elements
+      if (scrollContainer) {
+        mutationObserver.observe(scrollContainer, {
+          childList: true,
+          subtree: true,
+        });
+      }
+
+      // Add scroll listener as backup - try multiple containers
+      if (handleScroll) {
+        // Attach to the scroll container
+        scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+        console.log('✅ Scroll listener attached to:', scrollContainer.className);
+
+        // Also try attaching to the viewer element itself
+        const viewerElement = document.querySelector('.rpv-core__viewer');
+        if (viewerElement && viewerElement !== scrollContainer) {
+          viewerElement.addEventListener('scroll', handleScroll, { passive: true });
+          console.log('✅ Scroll listener also attached to .rpv-core__viewer');
         }
-      };
 
-      scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+        // Also try window scroll as fallback
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        console.log('✅ Scroll listener also attached to window');
 
-      return () => {
-        observers.forEach((observer) => observer.disconnect());
-        scrollContainer.removeEventListener('scroll', handleScroll);
-      };
-    }
+        // Test if scroll is working
+        console.log('🧪 Testing scroll detection...');
+        setTimeout(() => {
+          if (scrollContainer) {
+            console.log('🧪 Scroll container scrollTop:', scrollContainer.scrollTop);
+            console.log('🧪 Scroll container scrollHeight:', scrollContainer.scrollHeight);
+            console.log('🧪 Scroll container clientHeight:', scrollContainer.clientHeight);
+          }
+          if (handleScroll) {
+            handleScroll(); // Trigger initial check
+          }
+        }, 500);
 
+        // Add polling fallback - check every 500ms for page changes
+        pollInterval = setInterval(() => {
+          if (scrollContainer && handleScroll) {
+            handleScroll();
+          }
+        }, 500);
+        console.log('✅ Polling fallback enabled (checks every 500ms)');
+      }
+    }, 1500);
+
+    // Cleanup function
     return () => {
+      clearTimeout(setupTimeout);
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
       observers.forEach((observer) => observer.disconnect());
+      if (mutationObserver) {
+        mutationObserver.disconnect();
+      }
+      if (scrollContainer && handleScroll) {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      }
+      if (handleScroll) {
+        const viewerElement = document.querySelector('.rpv-core__viewer');
+        if (viewerElement) {
+          viewerElement.removeEventListener('scroll', handleScroll);
+        }
+        window.removeEventListener('scroll', handleScroll);
+      }
     };
   }, [viewerReady, totalPages, currentPage, getViewerScrollContainer, getPageElement]);
 
@@ -412,29 +522,81 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     setRotation(newRotation);
   }, [rotation]);
 
-  // Helper function to scroll to a page with retry logic
+  // Helper function to scroll to a page with retry logic and lazy-loading support
   const scrollToPage = useCallback(
-    (pageIndex: number, retries = 3) => {
-      const pageElement = getPageElement(pageIndex);
+    (pageIndex: number, retries = 5) => {
       const scrollContainer = getViewerScrollContainer();
+      if (!scrollContainer) {
+        if (retries > 0) {
+          setTimeout(() => scrollToPage(pageIndex, retries - 1), 200);
+        }
+        return false;
+      }
 
-      if (pageElement && scrollContainer) {
+      const pageElement = getPageElement(pageIndex);
+
+      if (pageElement) {
+        // Special handling for page 1 (index 0) - scroll to very top
+        if (pageIndex === 0) {
+          scrollContainer.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+          });
+          console.log('📍 Scrolled to page 1 (top of document)');
+          return true;
+        }
+
+        // For other pages, calculate scroll position
         const containerRect = scrollContainer.getBoundingClientRect();
         const elementRect = pageElement.getBoundingClientRect();
-        const scrollTop = scrollContainer.scrollTop + (elementRect.top - containerRect.top) - 20; // Add small offset
+
+        // Calculate the position to center the page in the viewport
+        const pageTop = elementRect.top - containerRect.top + scrollContainer.scrollTop;
+        const viewportHeight = containerRect.height;
+        const pageHeight = elementRect.height;
+
+        // Center the page in the viewport, with a small offset from top
+        const scrollTop = pageTop - (viewportHeight - pageHeight) / 2 - 10;
 
         scrollContainer.scrollTo({
           top: Math.max(0, scrollTop),
           behavior: 'smooth',
         });
         return true;
-      } else if (retries > 0) {
-        // Retry after a short delay
-        console.log(`⏳ Retrying page navigation (${retries} retries left)...`);
-        setTimeout(() => scrollToPage(pageIndex, retries - 1), 200);
-        return false;
       } else {
-        console.warn(`❌ Could not find page element or scroll container for page index ${pageIndex}`);
+        // Page not in DOM yet (lazy loading) - scroll near it to trigger rendering
+        if (retries > 0) {
+          console.log(
+            `⏳ Page ${
+              pageIndex + 1
+            } not rendered yet, scrolling near it to trigger lazy loading (${retries} retries left)...`
+          );
+
+          // Estimate where the page would be based on average page height
+          const allPages = document.querySelectorAll('.rpv-core__page-layer');
+          let avgPageHeight = 800; // Default estimate
+
+          if (allPages.length > 0) {
+            const totalHeight = Array.from(allPages).reduce((sum, page) => {
+              return sum + (page as HTMLElement).offsetHeight;
+            }, 0);
+            avgPageHeight = totalHeight / allPages.length;
+          }
+
+          // Scroll to estimated position to trigger lazy loading
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const viewportHeight = containerRect.height;
+          const estimatedScrollTop = pageIndex * avgPageHeight;
+          scrollContainer.scrollTo({
+            top: Math.max(0, estimatedScrollTop - viewportHeight / 2),
+            behavior: 'smooth',
+          });
+
+          // Wait for page to render, then retry
+          setTimeout(() => scrollToPage(pageIndex, retries - 1), 400);
+        } else {
+          console.warn(`❌ Could not find page element for page index ${pageIndex} after all retries`);
+        }
         return false;
       }
     },

@@ -320,11 +320,17 @@ body {
   overflow-x: hidden !important;
 }
 
+/* Add padding to inner pages to prevent bottom cropping */
+.rpv-core__inner-pages {
+  padding-bottom: 2rem !important;
+}
+
 /* Optimize PDF page rendering */
 .rpv-core__page-layer {
   will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  margin-bottom: 0.5rem !important;
 }
 
 .rpv-core__page {
