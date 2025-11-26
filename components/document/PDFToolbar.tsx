@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 
 export interface PDFToolbarProps {
   currentPage: number;
+  setCurrentPage: (page: number) => void;
   totalPages: number;
   zoom: number;
   rotation: number;
@@ -28,6 +29,7 @@ export interface PDFToolbarProps {
 
 export function PDFToolbar({
   currentPage,
+  setCurrentPage,
   totalPages,
   zoom,
   rotation,
@@ -44,7 +46,6 @@ export function PDFToolbar({
   showThumbnails,
   className,
 }: PDFToolbarProps) {
-  const [pageInput, setPageInput] = useState('1');
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleZoomSliderChange = (values: number[]) => {
@@ -57,7 +58,8 @@ export function PDFToolbar({
 
     // Only allow numbers (empty string is allowed for clearing)
     if (value === '' || /^\d+$/.test(value)) {
-      setPageInput(value);
+      // setPageInput(value);
+      setCurrentPage(parseInt(value, 10));
 
       // Clear existing timeout
       if (debounceTimeoutRef.current) {
@@ -75,7 +77,8 @@ export function PDFToolbar({
 
             // If value was corrected, update the input display
             if (finalPage !== pageNum) {
-              setPageInput(finalPage.toString());
+              // setPageInput(finalPage.toString());
+              setCurrentPage(finalPage);
             }
 
             // Jump to the page
@@ -133,7 +136,7 @@ export function PDFToolbar({
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
-              value={pageInput}
+              value={currentPage}
               onChange={handlePageInputChange}
               placeholder="Page"
               className="h-8 w-16 text-center text-xs px-2"

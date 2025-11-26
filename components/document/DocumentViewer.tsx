@@ -722,6 +722,7 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
       {/* Toolbar */}
       <PDFToolbar
         currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
         totalPages={totalPages}
         zoom={zoom}
         rotation={rotation}
