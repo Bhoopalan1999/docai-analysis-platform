@@ -457,28 +457,12 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     }
   }, [rotation]);
 
-  // Handle document load
-  const handleDocumentLoad = useCallback((e: { doc?: { numPages?: number }; file?: unknown }) => {
-    try {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-        loadingTimeoutRef.current = null;
-      }
-
-      const doc = e?.doc;
-      if (doc && typeof doc.numPages === 'number') {
-        const numPages = doc.numPages;
-        setTotalPages(numPages);
-        setCurrentPage(1); // Reset to first page
-        console.log('📚 PDF loaded successfully, total pages:', numPages);
-      }
-    } catch (err) {
-      console.error('Error processing document load:', err);
-      setError('Failed to process PDF document');
-    } finally {
-      setLoading(false);
+  // Save current page to localStorage
+  useEffect(() => {
+    if (currentPage > 0 && totalPages > 0 && fileName) {
+      localStorage.setItem(`pdf-page-${fileName}`, currentPage.toString());
     }
-  }, []);
+  }, [currentPage, fileName, totalPages]);
 
   // Handle render errors
   const handleRenderError = useCallback((renderError: LoadError): React.ReactElement => {
@@ -636,6 +620,75 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
     [totalPages, scrollToPage]
   );
 
+  const jumpToPage = useCallback(
+    (page: number) => {
+      handlePageSelect(page);
+    },
+    [handlePageSelect]
+  );
+
+  // Handle document load
+  const handleDocumentLoad = useCallback(
+    (e: { doc?: { numPages?: number }; file?: unknown }) => {
+      try {
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
+
+        const doc = e?.doc;
+        if (doc && typeof doc.numPages === 'number') {
+          const numPages = doc.numPages;
+          setTotalPages(numPages);
+
+          // Try to restore last page from localStorage
+          const savedPage = localStorage.getItem(`pdf-page-${fileName}`);
+          if (savedPage) {
+            const page = parseInt(savedPage, 10);
+            if (page >= 1 && page <= numPages) {
+              console.log('📚 Restoring saved page:', page);
+              setTimeout(() => {
+                jumpToPage(page);
+              }, 500); // Wait a bit for viewer to be ready
+            } else {
+              setCurrentPage(1);
+            }
+          } else {
+            setCurrentPage(1); // Reset to first page
+          }
+          console.log('📚 PDF loaded successfully, total pages:', numPages);
+        }
+      } catch (err) {
+        console.error('Error processing document load:', err);
+        setError('Failed to process PDF document');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fileName, jumpToPage]
+  );
+
+  // Keyboard shortcuts for page navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not typing in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePreviousPage();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNextPage();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePreviousPage, handleNextPage]);
+
   const handleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
@@ -669,6 +722,7 @@ export function DocumentViewer({ pdfUrl, fileName, onDownload, className }: Docu
         onRotate={handleRotate}
         onPreviousPage={handlePreviousPage}
         onNextPage={handleNextPage}
+        onPageJump={jumpToPage}
         onDownload={handleDownload}
         onFullscreen={handleFullscreen}
         onToggleThumbnails={() => setShowThumbnails(!showThumbnails)}

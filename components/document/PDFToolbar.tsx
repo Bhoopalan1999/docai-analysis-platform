@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { ZoomIn, ZoomOut, RotateCw, ChevronLeft, ChevronRight, Download, Maximize, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -16,6 +18,7 @@ export interface PDFToolbarProps {
   onRotate: () => void;
   onPreviousPage: () => void;
   onNextPage: () => void;
+  onPageJump?: (page: number) => void;
   onDownload: () => void;
   onFullscreen: () => void;
   onToggleThumbnails: () => void;
@@ -34,14 +37,31 @@ export function PDFToolbar({
   onRotate,
   onPreviousPage,
   onNextPage,
+  onPageJump,
   onDownload,
   onFullscreen,
   onToggleThumbnails,
   showThumbnails,
   className,
 }: PDFToolbarProps) {
+  const [pageInput, setPageInput] = useState('');
+
   const handleZoomSliderChange = (values: number[]) => {
     onZoomChange(values[0]);
+  };
+
+  const handlePageInputSubmit = () => {
+    const page = parseInt(pageInput, 10);
+    if (page >= 1 && page <= totalPages && onPageJump) {
+      onPageJump(page);
+      setPageInput('');
+    }
+  };
+
+  const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handlePageInputSubmit();
+    }
   };
 
   return (
@@ -71,6 +91,21 @@ export function PDFToolbar({
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
+        {onPageJump && (
+          <div className="flex items-center gap-1 ml-1">
+            <Input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={pageInput}
+              onChange={(e) => setPageInput(e.target.value)}
+              onKeyDown={handlePageInputKeyDown}
+              placeholder="Page"
+              className="h-8 w-16 text-center text-xs px-2"
+              title="Type page number and press Enter"
+            />
+          </div>
+        )}
       </div>
 
       <div className="h-6 w-px bg-border" />
