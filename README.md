@@ -15,6 +15,8 @@
 - **Advanced Analytics** - Extract entities, analyze sentiment and visualize insights
 - **Secure & Private** - End-to-end encryption with secure cloud storage
 
+[![DocAI Platform](./public/docai-app-ui.webp)](https://docai-analysis-platform.vercel.app/)
+
 ## 🚀 Tech Stack
 
 - **Frontend:** Next.js 16, React, TypeScript, Tailwind CSS, shadcn/ui
@@ -23,8 +25,6 @@
 - **Storage:** AWS S3, Pinecone Vector Database
 - **Auth:** Better Auth
 - **Document Processing:** PDF.js, Mammoth (DOCX), SheetJS (Excel)
-
-[![DocAI Platform](./public/docai-app-ui.webp)](https://docai-analysis-platform.vercel.app/)
 
 ## 📦 Installation
 
