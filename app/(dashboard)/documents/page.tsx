@@ -13,7 +13,7 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div>
+    <div className="p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Documents</h1>
         <p className="text-muted-foreground">Manage and analyze your documents</p>
