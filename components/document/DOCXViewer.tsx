@@ -119,10 +119,9 @@ export function DOCXViewer({ documentId, onDownload, className }: DOCXViewerProp
 
       {/* Content */}
       <ScrollArea className="flex-1">
-        {/* eslint-disable-next-line react/forbid-dom-props */}
         <div
           className="docx-zoom-wrapper"
-          style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' }}
+          style={{ transform: `scale(${zoom})`, transformOrigin: 'top left' } as React.CSSProperties}
         >
           <div
             className="p-8 prose prose-sm max-w-none dark:prose-invert docx-content"

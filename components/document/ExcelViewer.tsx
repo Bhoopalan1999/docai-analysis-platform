@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Download, ArrowUpDown } from 'lucide-react';
-import * as XLSX from 'xlsx';
 
 export interface ExcelViewerProps {
   documentId: string;
