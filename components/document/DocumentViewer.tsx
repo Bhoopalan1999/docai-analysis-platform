@@ -82,6 +82,7 @@ export function DocumentViewer({ documentId, fileType, fileName, pdfUrl, onDownl
       {/* Analysis Panel - Right Side */}
       <AnalysisPanel
         documentId={documentId}
+        fileName={fileName}
         isOpen={showAnalysisPanel}
         onToggle={() => setShowAnalysisPanel(!showAnalysisPanel)}
       />
