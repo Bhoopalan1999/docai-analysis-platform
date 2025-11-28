@@ -20,7 +20,7 @@ export function AnalysisPanel({ documentId, fileName, className, onToggle, isOpe
         className={cn(
           'flex flex-col h-full bg-background border-l border-border transition-all duration-300',
           !isOpen && 'w-0 overflow-hidden',
-          isOpen && 'w-96',
+          isOpen && 'w-lg',
           className
         )}
       >
@@ -49,7 +49,7 @@ export function AnalysisPanel({ documentId, fileName, className, onToggle, isOpe
       className={cn(
         'flex flex-col h-full bg-background border-l border-border transition-all duration-300',
         !isOpen && 'w-0 overflow-hidden',
-        isOpen && 'w-96',
+        isOpen && 'w-lg',
         className
       )}
     >
