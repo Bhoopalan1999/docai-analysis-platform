@@ -70,7 +70,7 @@ export function DocumentAnalysis({ documentId, fileName, className }: DocumentAn
               documentId={documentId}
               conversationId={conversationId}
               onConversationIdChange={setConversationId}
-              className="h-full"
+              className="h-fit"
             />
           </TabsContent>
 
