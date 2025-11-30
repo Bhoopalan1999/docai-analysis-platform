@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, TrendingUp, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useDocumentEntities, useInvalidateEntities } from '@/lib/hooks/useDocumentEntities';
 
 export interface Entity {
   name: string;
@@ -21,37 +22,18 @@ export interface EntitiesTableProps {
 }
 
 export function EntitiesTable({ documentId, className }: EntitiesTableProps) {
-  const [entities, setEntities] = useState<Entity[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Use React Query hook - automatically handles caching, refetching, and state management
+  const { data, isLoading, error, refetch, isFetching } = useDocumentEntities(documentId);
+  const invalidateEntities = useInvalidateEntities();
 
-  const fetchEntities = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/ai/extract-entities?documentId=${documentId}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to extract entities');
-      }
-
-      const data = await response.json();
-      if (data.success && data.entities) {
-        setEntities(data.entities);
-      } else {
-        throw new Error(data.error || 'Failed to extract entities');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load entities');
-    } finally {
-      setLoading(false);
-    }
+  const handleRefresh = () => {
+    // Force refetch by invalidating cache
+    invalidateEntities(documentId);
+    refetch();
   };
 
-  useEffect(() => {
-    fetchEntities();
-  }, [documentId]);
+  const entities = data?.entities || [];
+  const errorMessage = error instanceof Error ? error.message : 'Failed to load entities';
 
   const getEntityTypeColor = (type: string) => {
     const colors: Record<string, string> = {
@@ -74,14 +56,14 @@ export function EntitiesTable({ documentId, className }: EntitiesTableProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={fetchEntities}
-          disabled={loading}
+          onClick={handleRefresh}
+          disabled={isFetching}
         >
-          <RefreshCw className={cn('h-3 w-3', loading && 'animate-spin')} />
+          <RefreshCw className={cn('h-3 w-3', isFetching && 'animate-spin')} />
         </Button>
       </div>
 
-      {loading && entities.length === 0 && (
+      {isLoading && entities.length === 0 && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
@@ -89,11 +71,11 @@ export function EntitiesTable({ documentId, className }: EntitiesTableProps) {
 
       {error && (
         <div className="text-sm text-destructive py-4">
-          <p>{error}</p>
+          <p>{errorMessage}</p>
           <Button
             variant="link"
             size="sm"
-            onClick={fetchEntities}
+            onClick={handleRefresh}
             className="p-0 h-auto mt-2"
           >
             Try again
@@ -131,7 +113,7 @@ export function EntitiesTable({ documentId, className }: EntitiesTableProps) {
         </div>
       )}
 
-      {!loading && !error && entities.length === 0 && (
+      {!isLoading && !error && entities.length === 0 && (
         <div className="text-sm text-muted-foreground py-4 text-center">No entities found</div>
       )}
     </Card>
