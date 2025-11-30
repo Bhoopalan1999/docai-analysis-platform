@@ -47,10 +47,11 @@ export async function trackUsage(
 
     // Calculate cost based on action and model
     if (metadata?.model && metadata?.inputTokens && metadata?.outputTokens) {
-      const model = metadata.model as keyof typeof COST_PER_TOKEN;
-      if (COST_PER_TOKEN[model]) {
-        const inputCost = ((metadata.inputTokens as number) / 1000) * COST_PER_TOKEN[model].input;
-        const outputCost = ((metadata.outputTokens as number) / 1000) * COST_PER_TOKEN[model].output;
+      const model = metadata.model as 'openai' | 'anthropic' | 'gemini';
+      const modelCosts = COST_PER_TOKEN[model];
+      if (modelCosts && 'input' in modelCosts && 'output' in modelCosts) {
+        const inputCost = ((metadata.inputTokens as number) / 1000) * modelCosts.input;
+        const outputCost = ((metadata.outputTokens as number) / 1000) * modelCosts.output;
         cost = Math.round((inputCost + outputCost) * 100); // Convert to cents
       }
     }

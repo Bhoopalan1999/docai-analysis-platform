@@ -34,22 +34,6 @@ export function SentimentDistribution({ data, className }: SentimentDistribution
   const total = data.positive + data.negative + data.neutral;
   const hasData = total > 0;
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0];
-      const percentage = total > 0 ? ((data.value / total) * 100).toFixed(1) : 0;
-      return (
-        <div className="bg-background border border-border rounded-lg p-2 shadow-lg">
-          <p className="font-semibold">{data.name}</p>
-          <p className="text-sm">
-            Count: {data.value} ({percentage}%)
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
     <Card className={className}>
       <CardHeader>
@@ -69,7 +53,7 @@ export function SentimentDistribution({ data, className }: SentimentDistribution
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -81,7 +65,23 @@ export function SentimentDistribution({ data, className }: SentimentDistribution
                     />
                   ))}
                 </Pie>
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const tooltipData = payload[0];
+                      const percentage = total > 0 ? ((tooltipData.value / total) * 100).toFixed(1) : 0;
+                      return (
+                        <div className="bg-background border border-border rounded-lg p-2 shadow-lg">
+                          <p className="font-semibold">{tooltipData.name}</p>
+                          <p className="text-sm">
+                            Count: {tooltipData.value} ({percentage}%)
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -89,30 +89,15 @@ export function SentimentDistribution({ data, className }: SentimentDistribution
             {/* Summary Stats */}
             <div className="grid grid-cols-3 gap-4 pt-4 border-t">
               <div className="text-center">
-                <div
-                  className="text-2xl font-bold"
-                  style={{ color: COLORS.positive }}
-                >
-                  {data.positive}
-                </div>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-500">{data.positive}</div>
                 <div className="text-xs text-muted-foreground">Positive</div>
               </div>
               <div className="text-center">
-                <div
-                  className="text-2xl font-bold"
-                  style={{ color: COLORS.neutral }}
-                >
-                  {data.neutral}
-                </div>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-500">{data.neutral}</div>
                 <div className="text-xs text-muted-foreground">Neutral</div>
               </div>
               <div className="text-center">
-                <div
-                  className="text-2xl font-bold"
-                  style={{ color: COLORS.negative }}
-                >
-                  {data.negative}
-                </div>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-500">{data.negative}</div>
                 <div className="text-xs text-muted-foreground">Negative</div>
               </div>
             </div>
