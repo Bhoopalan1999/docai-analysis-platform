@@ -101,3 +101,29 @@ export async function updateConversationTitle(conversationId: string, title: str
     })
     .where(eq(conversations.id, conversationId));
 }
+
+/**
+ * Delete a conversation and all its messages
+ * @param conversationId - Conversation ID
+ * @param userId - User ID (for authorization check)
+ */
+export async function deleteConversation(conversationId: string, userId: string): Promise<boolean> {
+  // First verify the conversation belongs to the user
+  const [conversation] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, conversationId), eq(conversations.userId, userId)))
+    .limit(1);
+
+  if (!conversation) {
+    return false;
+  }
+
+  // Delete all messages first (due to foreign key constraint)
+  await db.delete(messages).where(eq(messages.conversationId, conversationId));
+
+  // Delete the conversation
+  await db.delete(conversations).where(eq(conversations.id, conversationId));
+
+  return true;
+}
