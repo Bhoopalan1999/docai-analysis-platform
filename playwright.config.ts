@@ -21,6 +21,10 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+    /* Take screenshot on failure */
+    screenshot: 'only-on-failure',
+    /* Video on failure */
+    video: 'retain-on-failure',
   },
 
   /* Configure projects for major browsers */
@@ -49,4 +53,3 @@ export default defineConfig({
     timeout: 120 * 1000,
   },
 });
-
