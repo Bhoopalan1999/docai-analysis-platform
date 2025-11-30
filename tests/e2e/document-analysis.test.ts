@@ -1,10 +1,51 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+/**
+ * Helper function to dismiss the onboarding tour if it's visible
+ */
+async function dismissTour(page: Page) {
+  try {
+    // Wait a bit for the tour to appear (it might be animating in)
+    await page.waitForTimeout(500);
+
+    // Try multiple strategies to dismiss the tour
+    // Strategy 1: Click "Skip Tour" button
+    const skipButton = page.getByRole('button', { name: /skip tour/i });
+    if (await skipButton.isVisible({ timeout: 2000 })) {
+      await skipButton.click();
+      // Wait for dialog to close
+      await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(300);
+      return;
+    }
+
+    // Strategy 2: Click the X close button in the dialog header
+    const closeButton = page.locator('button:has([class*="lucide-x"]), button[aria-label*="close" i]').first();
+    if (await closeButton.isVisible({ timeout: 2000 })) {
+      await closeButton.click();
+      await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(300);
+      return;
+    }
+
+    // Strategy 3: Press Escape key
+    const dialog = page.locator('[role="dialog"]').first();
+    if (await dialog.isVisible({ timeout: 1000 })) {
+      await page.keyboard.press('Escape');
+      await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(300);
+      return;
+    }
+  } catch {
+    // Tour might not be visible, which is fine - just continue
+  }
+}
 
 /**
  * Helper function to sign in a user
  * Creates a test user if needed and signs them in
  */
-async function signInUser(page: any, email = 'test@example.com', password = 'password123') {
+async function signInUser(page: Page, email = 'test@example.com', password = 'password123') {
   // Check if we're already on the documents page (already signed in)
   const currentUrl = page.url();
   if (currentUrl.includes('/documents') && !currentUrl.includes('/sign-in')) {
@@ -65,6 +106,9 @@ async function signInUser(page: any, email = 'test@example.com', password = 'pas
 
   // Verify documents page content is visible
   await expect(page.getByText(/documents/i).first()).toBeVisible({ timeout: 10000 });
+
+  // Dismiss tour popup if it appears
+  await dismissTour(page);
 }
 
 test.describe('Document Analysis E2E Flow', () => {
@@ -77,10 +121,13 @@ test.describe('Document Analysis E2E Flow', () => {
     // Step 1: Sign in
     await signInUser(page);
 
-    // Step 2: Verify we're on the documents page
+    // Step 2: Dismiss tour if visible (signInUser already does this, but ensure it's done)
+    await dismissTour(page);
+
+    // Step 3: Verify we're on the documents page
     await expect(page.getByText(/documents/i).first()).toBeVisible({ timeout: 10000 });
 
-    // Step 3: Upload a document (if upload functionality is available)
+    // Step 4: Upload a document (if upload functionality is available)
     const uploadTab = page.getByRole('tab', { name: /^upload$/i });
     if (await uploadTab.isVisible({ timeout: 2000 })) {
       await uploadTab.click();
@@ -90,7 +137,7 @@ test.describe('Document Analysis E2E Flow', () => {
       await expect(uploadArea).toBeVisible({ timeout: 5000 });
     }
 
-    // Step 4: Navigate to document list
+    // Step 5: Navigate to document list
     const listTab = page.getByRole('tab', { name: /^my documents$/i });
     if (await listTab.isVisible({ timeout: 2000 })) {
       await listTab.click();
@@ -101,7 +148,7 @@ test.describe('Document Analysis E2E Flow', () => {
       });
     }
 
-    // Step 5: If documents exist, click on one to view
+    // Step 6: If documents exist, click on one to view
     const documentCard = page.locator('[data-testid="document-card"]').first();
     if (await documentCard.isVisible({ timeout: 2000 })) {
       await documentCard.click();
@@ -109,7 +156,7 @@ test.describe('Document Analysis E2E Flow', () => {
       // Wait for document viewer to load
       await expect(page.getByText(/analysis/i).first()).toBeVisible({ timeout: 10000 });
 
-      // Step 6: Test Q&A interface
+      // Step 7: Test Q&A interface
       const qaInput = page.locator('textarea[placeholder*="question"], textarea[placeholder*="ask"]').first();
       if (await qaInput.isVisible({ timeout: 2000 })) {
         await qaInput.fill('What is this document about?');
@@ -124,21 +171,21 @@ test.describe('Document Analysis E2E Flow', () => {
         });
       }
 
-      // Step 7: Test summary tab
+      // Step 8: Test summary tab
       const summaryTab = page.getByRole('tab', { name: /summary/i });
       if (await summaryTab.isVisible({ timeout: 2000 })) {
         await summaryTab.click();
         await page.waitForTimeout(2000); // Wait for summary to load
       }
 
-      // Step 8: Test entities tab
+      // Step 9: Test entities tab
       const entitiesTab = page.getByRole('tab', { name: /entities/i });
       if (await entitiesTab.isVisible({ timeout: 2000 })) {
         await entitiesTab.click();
         await page.waitForTimeout(2000); // Wait for entities to load
       }
 
-      // Step 9: Test sentiment tab
+      // Step 10: Test sentiment tab
       const sentimentTab = page.getByRole('tab', { name: /sentiment/i });
       if (await sentimentTab.isVisible({ timeout: 2000 })) {
         await sentimentTab.click();
@@ -156,6 +203,9 @@ test.describe('Document Analysis E2E Flow', () => {
 
     // Wait for page to be ready
     await expect(page.getByText(/documents/i).first()).toBeVisible({ timeout: 10000 });
+
+    // Dismiss tour popup if visible
+    await dismissTour(page);
 
     // Click on "My Documents" tab
     const listTab = page.getByRole('tab', { name: /^my documents$/i });
@@ -182,6 +232,9 @@ test.describe('Document Analysis E2E Flow', () => {
     // Navigate to documents page
     await page.goto('http://localhost:3000/documents', { waitUntil: 'networkidle' });
     await expect(page.getByText(/documents/i).first()).toBeVisible({ timeout: 10000 });
+
+    // Dismiss tour popup if visible
+    await dismissTour(page);
 
     // Navigate to analytics
     const analyticsLink = page.getByRole('link', { name: /analytics/i });
