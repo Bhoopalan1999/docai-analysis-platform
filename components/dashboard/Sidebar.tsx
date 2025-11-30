@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { FileText, BarChart3, Settings, Upload, PanelLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -18,11 +19,25 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, toggleCollapse] = useCollapseState('dashboard-sidebar-collapsed', false);
+  const [enableTransitions, setEnableTransitions] = useState(false);
+
+  // Enable transitions after mount to prevent flash during hot reload
+  // useLayoutEffect in the hook already sets the correct state before paint,
+  // but we delay enabling transitions slightly to ensure smooth rendering
+  useEffect(() => {
+    // Small delay to ensure state is set before enabling transitions
+    const timer = setTimeout(() => {
+      setEnableTransitions(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <aside
       className={cn(
-        'border-r bg-card/50 backdrop-blur-sm flex flex-col h-screen sticky top-0 transition-all duration-300 ease-in-out',
+        'border-r bg-card/50 backdrop-blur-sm flex flex-col h-screen sticky top-0',
+        // Only enable transitions after mount to prevent flash during hot reload
+        enableTransitions && 'transition-all duration-300 ease-in-out',
         isCollapsed ? 'w-20' : 'w-64'
       )}
     >
