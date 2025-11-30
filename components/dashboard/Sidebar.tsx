@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText, BarChart3, Settings, Upload, PanelLeft, PanelRight } from 'lucide-react';
+import { FileText, BarChart3, Settings, Upload, PanelLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
@@ -39,10 +39,11 @@ export function Sidebar() {
             </span>
           </Link>
         )}
+
         {isCollapsed && (
           <Link
             href="/documents"
-            className="flex items-center justify-center group"
+            className="items-center justify-center group hidden"
             title="DocAI"
           >
             <Logo />
@@ -55,7 +56,9 @@ export function Sidebar() {
           className="p-1.5 shrink-0 cursor-pointer"
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {isCollapsed ? <PanelRight className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+          {/* <PanelLeft className="h-8 w-8" /> */}
+          {/* <PanelLeft className={cn('h-5 w-5 transition-transform scale-110')} /> */}
+          <PanelLeft className="h-4 w-4" />
         </Button>
       </div>
 
