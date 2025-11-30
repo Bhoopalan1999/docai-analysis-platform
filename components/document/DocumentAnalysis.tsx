@@ -7,6 +7,7 @@ import { SummaryCard } from './SummaryCard';
 import { EntitiesTable } from './EntitiesTable';
 import { SentimentGauge } from './SentimentGauge';
 import { ExportMenu } from './ExportMenu';
+import { ConversationList } from './ConversationList';
 import { MessageSquare, FileText, TrendingUp, BarChart3 } from 'lucide-react';
 
 export interface DocumentAnalysisProps {
@@ -17,6 +18,14 @@ export interface DocumentAnalysisProps {
 
 export function DocumentAnalysis({ documentId, fileName, className }: DocumentAnalysisProps) {
   const [conversationId, setConversationId] = useState<string | undefined>();
+
+  const handleNewConversation = () => {
+    setConversationId(undefined);
+  };
+
+  const handleSelectConversation = (id: string) => {
+    setConversationId(id);
+  };
 
   return (
     <div className={className}>
@@ -61,17 +70,31 @@ export function DocumentAnalysis({ documentId, fileName, className }: DocumentAn
           />
         </div>
 
-        <div className="flex-1 overflow-hidden min-h-0">
+        <div className="flex-1 overflow-hidden min-h-0 flex">
           <TabsContent
             value="chat"
-            className="h-full m-0 flex flex-col min-h-0"
+            className="h-full m-0 flex flex-col min-h-0 flex-1"
           >
-            <QAInterface
-              documentId={documentId}
-              conversationId={conversationId}
-              onConversationIdChange={setConversationId}
-              className="h-full"
-            />
+            <div className="flex h-full">
+              {/* Conversation Sidebar */}
+              <ConversationList
+                documentId={documentId}
+                currentConversationId={conversationId}
+                onSelectConversation={handleSelectConversation}
+                onNewConversation={handleNewConversation}
+                className="w-64 shrink-0"
+              />
+
+              {/* Chat Interface */}
+              <div className="flex-1 min-w-0">
+                <QAInterface
+                  documentId={documentId}
+                  conversationId={conversationId}
+                  onConversationIdChange={setConversationId}
+                  className="h-full"
+                />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent
