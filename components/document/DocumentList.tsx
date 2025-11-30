@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { DocumentCard } from '@/components/document/DocumentCard';
-import { EmptyState } from '@/components/dashboard/EmptyState';
-import { FileText } from 'lucide-react';
+import { EmptyStates } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
+// import { toast } from 'sonner';
 
 type Document = {
   id: string;
@@ -73,13 +73,7 @@ export function DocumentList() {
   }
 
   if (documents.length === 0) {
-    return (
-      <EmptyState
-        title="No documents yet"
-        description="Upload your first document to get started with AI-powered analysis"
-        icon={<FileText className="h-12 w-12 text-muted-foreground" />}
-      />
-    );
+    return <EmptyStates.NoDocuments />;
   }
 
   return (

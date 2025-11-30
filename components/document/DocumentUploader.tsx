@@ -2,11 +2,12 @@
 
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileText, X, Loader2 } from 'lucide-react';
+import { Upload, X, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 type FileWithProgress = {
   file: File;
@@ -48,28 +49,32 @@ export function DocumentUploader({ onUploadComplete }: DocumentUploaderProps) {
 
     // Validate file
     if (file.size > MAX_FILE_SIZE) {
+      const errorMsg = 'File size exceeds 50MB limit';
       setFiles((prev) => {
         const updated = [...prev];
         updated[fileIndex] = {
           ...updated[fileIndex],
           status: 'error',
-          error: 'File size exceeds 50MB limit',
+          error: errorMsg,
         };
         return updated;
       });
+      toast.error('Upload failed', { description: errorMsg });
       return;
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
+      const errorMsg = 'Invalid file type. Only PDF, DOCX, and XLSX are supported';
       setFiles((prev) => {
         const updated = [...prev];
         updated[fileIndex] = {
           ...updated[fileIndex],
           status: 'error',
-          error: 'Invalid file type. Only PDF, DOCX, and XLSX are supported',
+          error: errorMsg,
         };
         return updated;
       });
+      toast.error('Upload failed', { description: errorMsg });
       return;
     }
 
@@ -109,19 +114,26 @@ export function DocumentUploader({ onUploadComplete }: DocumentUploaderProps) {
         return updated;
       });
 
+      toast.success('Upload successful', {
+        description: `${file.name} has been uploaded and is being processed`,
+        icon: <CheckCircle2 className="h-4 w-4" />,
+      });
+
       if (onUploadComplete) {
         onUploadComplete(data.documentId);
       }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Upload failed';
       setFiles((prev) => {
         const updated = [...prev];
         updated[fileIndex] = {
           ...updated[fileIndex],
           status: 'error',
-          error: error instanceof Error ? error.message : 'Upload failed',
+          error: errorMsg,
         };
         return updated;
       });
+      toast.error('Upload failed', { description: errorMsg });
     }
   };
 
@@ -230,7 +242,7 @@ export function DocumentUploader({ onUploadComplete }: DocumentUploaderProps) {
 
               {fileWithProgress.status === 'completed' && (
                 <div className="flex items-center space-x-2 text-sm text-primary bg-primary/10 px-3 py-2 rounded-lg">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <CheckCircle2 className="h-4 w-4" />
                   <span className="font-medium">Upload complete</span>
                 </div>
               )}
