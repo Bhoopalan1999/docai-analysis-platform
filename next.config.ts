@@ -2,10 +2,31 @@ import type { NextConfig } from 'next';
 import path from 'path';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /* Production configuration */
   reactCompiler: true,
+
   // Set the workspace root to silence the multiple lockfiles warning
   outputFileTracingRoot: process.cwd(),
+
+  // Production optimizations
+  compress: true,
+  poweredByHeader: false,
+
+  // Image optimization
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.amazonaws.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.s3.amazonaws.com',
+      },
+    ],
+  },
+
+  // Webpack configuration for PDF.js and canvas handling
   webpack: (config, { isServer, webpack }) => {
     // Create a stub module path for canvas
     const canvasStubPath = path.resolve(process.cwd(), 'lib/canvas-stub.js');

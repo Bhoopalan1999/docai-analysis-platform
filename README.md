@@ -43,31 +43,43 @@ npm install
 
 1. **Set up environment variables**
 
-Create a `.env.local` file in the root directory with the following variables:
+Copy `.env.example` to `.env.local` and fill in your values:
+
+```bash
+cp .env.example .env.local
+```
+
+Required environment variables:
 
 ```env
 # Database
-DATABASE_URL=
+DATABASE_URL=postgresql://user:password@host:5432/database
 
 # Auth
-BETTER_AUTH_SECRET=
-BETTER_AUTH_URL=
+BETTER_AUTH_SECRET=your-secret-key-here
+BETTER_AUTH_URL=http://localhost:3000
 
 # AI Models
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
-GOOGLE_GENERATIVE_AI_API_KEY=
-
-# Storage
-AWS_REGION=
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_S3_BUCKET_NAME=
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_AI_API_KEY=...
 
 # Vector Database
-PINECONE_API_KEY=
-PINECONE_INDEX_NAME=
+PINECONE_API_KEY=...
+PINECONE_INDEX=your-index-name
+
+# File Storage
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=us-east-1
+S3_BUCKET_NAME=your-bucket-name
+
+# Caching (Optional but recommended)
+UPSTASH_REDIS_URL=https://...
+UPSTASH_REDIS_TOKEN=...
 ```
+
+See [Environment Variables Guide](./docs/ENVIRONMENT_VARIABLES.md) for detailed information.
 
 1. **Run the development server**
 
@@ -77,25 +89,93 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to see the application.
 
+### Database Setup
+
+Run database migrations:
+
+```bash
+npm run db:migrate
+```
+
+Or use Drizzle Kit to push schema:
+
+```bash
+npx drizzle-kit push
+```
+
 ## 🏗️ Project Structure
 
 ```text
-├── app/                    # Next.js app directory
-│   ├── (auth)/            # Authentication pages
-│   ├── (dashboard)/       # Dashboard pages
-│   └── api/               # API routes
-├── components/            # React components
+├── app/                  # Next.js app directory
+│   ├── (auth)/           # Authentication pages
+│   ├── (dashboard)/      # Dashboard pages
+│   └── api/              # API routes
+├── components/           # React components
 │   ├── auth/             # Authentication components
 │   ├── dashboard/        # Dashboard components
 │   ├── document/         # Document viewer & uploader
 │   └── ui/               # shadcn/ui components
-├── lib/                   # Core libraries
+├── lib/                  # Core libraries
 │   ├── ai/               # AI & RAG pipeline
 │   ├── db/               # Database schema
 │   ├── processors/       # Document processors
 │   └── vector/           # Vector database
-└── public/               # Static assets
+├── public/               # Static assets
+├── tests/                # Test files
+│   ├── ai/               # AI pipeline tests
+│   ├── integration/      # Integration tests
+│   └── e2e/              # E2E tests
+└── docs/                 # Documentation
 ```
+
+## 📚 Documentation
+
+- **[API Documentation](./docs/API.md)** - Complete API reference with all endpoints
+- **[Environment Variables](./docs/ENVIRONMENT_VARIABLES.md)** - Environment setup guide
+- **[CI/CD Guide](./docs/CI_CD_GUIDE.md)** - Continuous integration and deployment
+- **[Security Best Practices](./docs/SECURITY_BEST_PRACTICES.md)** - Security guidelines
+
+## 🧪 Testing
+
+Run the test suite:
+
+```bash
+# Unit and integration tests
+npm test
+
+# E2E tests (requires dev server running)
+npm run test:e2e
+
+# Test with UI
+npm run test:ui
+
+# Coverage report
+npm run test:coverage
+```
+
+## 🚀 Deployment
+
+### Deploy to Vercel
+
+1. **Connect your GitHub repository** to Vercel
+2. **Configure environment variables** in Vercel dashboard:
+   - Go to Project Settings → Environment Variables
+   - Add all required variables from `.env.example`
+3. **Deploy:**
+   - Vercel will automatically deploy on every push to `main` branch
+   - Or manually trigger deployment from Vercel dashboard
+
+### Production Checklist
+
+- [ ] All environment variables configured
+- [ ] Database migrations run
+- [ ] Pinecone index created
+- [ ] S3 bucket configured with proper permissions
+- [ ] Redis cache configured (optional but recommended)
+- [ ] Domain configured (if using custom domain)
+- [ ] SSL certificate active
+
+See [Deployment Guide](./docs/DEPLOYMENT.md) for detailed instructions.
 
 ## 🔑 Key Features
 
@@ -121,6 +201,31 @@ Advanced retrieval-augmented generation with:
 - **Anthropic Claude:** Long-context analysis
 - **Google Gemini:** Multimodal understanding
 - **Intelligent Fallback:** Automatic model switching for reliability
+
+## 🛠️ Development
+
+### Available Scripts
+
+```bash
+# Development
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+
+# Database
+npm run db:migrate   # Run database migrations
+npm run db:studio    # Open Drizzle Studio
+
+# Testing
+npm test             # Run unit/integration tests
+npm run test:e2e     # Run E2E tests
+npm run test:ui      # Run tests with UI
+npm run test:coverage # Generate coverage report
+
+# Code Quality
+npm run lint         # Run ESLint
+npm run type-check   # TypeScript type checking
+```
 
 ## 📝 License
 
