@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { QueryProvider } from '@/lib/providers/QueryProvider';
 import { Toaster } from '@/components/ui/sonner';
 import { Analytics } from '@vercel/analytics/react';
+import { ErrorTrackingInit } from '@/components/error/ErrorTrackingInit';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -36,6 +37,7 @@ export default function RootLayout({
           <ThemeProvider>{children}</ThemeProvider>
           <Toaster />
           <Analytics />
+          <ErrorTrackingInit />
         </QueryProvider>
       </body>
     </html>
