@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Trash2, MessageSquare, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useConversations, useDeleteConversation } from '@/lib/hooks/useConversations';
+import { useCollapseState } from '@/lib/hooks/useCollapseState';
 import { toast } from 'sonner';
 
 interface ConversationListProps {
@@ -16,8 +17,6 @@ interface ConversationListProps {
   className?: string;
 }
 
-const COLLAPSED_STORAGE_KEY = 'conversation-list-collapsed';
-
 export function ConversationList({
   documentId,
   currentConversationId,
@@ -25,31 +24,14 @@ export function ConversationList({
   onNewConversation,
   className,
 }: ConversationListProps) {
-  // Collapse state with localStorage persistence
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(COLLAPSED_STORAGE_KEY);
-      return saved === 'true';
-    }
-    return false;
-  });
+  // Use reusable collapse hook
+  const [isCollapsed, toggleCollapse] = useCollapseState('conversation-list-collapsed', false);
 
   // Use React Query to fetch conversations
   const { data, isLoading, error } = useConversations(documentId);
   const deleteConversation = useDeleteConversation();
 
   const conversations = data?.conversations || [];
-
-  // Persist collapse state to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(COLLAPSED_STORAGE_KEY, String(isCollapsed));
-    }
-  }, [isCollapsed]);
-
-  const toggleCollapse = () => {
-    setIsCollapsed((prev) => !prev);
-  };
 
   const handleDelete = async (conversationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
