@@ -120,7 +120,7 @@ export async function getCostBreakdown(
   endDate?: Date
 ): Promise<Array<{ action: string; cost: number; count: number }>> {
   try {
-    let conditions = [eq(usage.userId, userId)];
+    const conditions = [eq(usage.userId, userId)];
 
     if (startDate) {
       conditions.push(gte(usage.createdAt, startDate));
@@ -191,7 +191,7 @@ export async function getUsageStats(
   costByModel?: Array<{ model: string; cost: number; count: number }>;
 }> {
   try {
-    let conditions = [eq(usage.userId, userId)];
+    const conditions = [eq(usage.userId, userId)];
 
     if (startDate) {
       conditions.push(gte(usage.createdAt, startDate));
