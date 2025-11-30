@@ -78,6 +78,7 @@ export async function getFileFromS3(key: string): Promise<Buffer> {
 
   // Convert stream to buffer
   const chunks: Uint8Array[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stream = response.Body as any;
 
   for await (const chunk of stream) {

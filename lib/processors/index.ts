@@ -1,5 +1,5 @@
 import { processPDFFromS3, PDFProcessingResult } from './pdf-processor';
-import { processDOCXFromS3, DOCXProcessingResult } from './docx-processor';
+import { processDOCXFromS3 } from './docx-processor';
 import { processExcelFromS3, ExcelProcessingResult } from './excel-processor';
 
 /**

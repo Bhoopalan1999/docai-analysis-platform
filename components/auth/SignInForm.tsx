@@ -33,7 +33,7 @@ export function SignInForm() {
         router.push('/documents');
         router.refresh();
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
@@ -81,7 +81,7 @@ export function SignInForm() {
             {loading ? 'Signing in...' : 'Sign In'}
           </Button>
           <div className="text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link
               href="/sign-up"
               className="text-primary hover:underline"

@@ -3,11 +3,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useQuery } from '@tanstack/react-query';
-import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, X, TrendingUp, BarChart3 } from 'lucide-react';
+import { FileText, TrendingUp, BarChart3 } from 'lucide-react';
 import { SummaryCard } from './SummaryCard';
 import { EntitiesTable } from './EntitiesTable';
 import { SentimentGauge } from './SentimentGauge';

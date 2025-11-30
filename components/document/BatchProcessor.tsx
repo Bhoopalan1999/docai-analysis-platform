@@ -158,7 +158,7 @@ export function BatchProcessor({ onUploadComplete, className }: BatchProcessorPr
   const pendingCount = files.filter((f) => f.status === 'pending').length;
   const successCount = files.filter((f) => f.status === 'success').length;
   const errorCount = files.filter((f) => f.status === 'error').length;
-  const uploadingCount = files.filter((f) => f.status === 'uploading').length;
+  // uploadingCount kept for potential future use
 
   return (
     <div className={className}>

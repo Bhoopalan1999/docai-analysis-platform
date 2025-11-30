@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
-import { FileText, File, FileSpreadsheet } from 'lucide-react';
+import { FileText, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface TimelineDocument {
@@ -38,22 +38,39 @@ const STATUS_COLORS = {
  * DocumentTimeline - Timeline view of documents
  */
 export function DocumentTimeline({ data, className }: DocumentTimelineProps) {
+  // Calculate today and yesterday dates once (not in render)
+  const today = React.useMemo(() => {
+    const now = new Date();
+    return format(now, 'yyyy-MM-dd');
+  }, []);
+
+  const yesterday = React.useMemo(() => {
+    const yesterdayDate = new Date();
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    return format(yesterdayDate, 'yyyy-MM-dd');
+  }, []);
+
   // Sort by creation date (newest first)
-  const sortedData = [...data].sort((a, b) => {
-    const dateA = new Date(a.createdAt).getTime();
-    const dateB = new Date(b.createdAt).getTime();
-    return dateB - dateA;
-  });
+  const sortedData = React.useMemo(() => {
+    return [...data].sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
+  }, [data]);
 
   // Group by date
-  const groupedByDate = new Map<string, TimelineDocument[]>();
-  for (const doc of sortedData) {
-    const dateKey = format(parseISO(doc.createdAt), 'yyyy-MM-dd');
-    if (!groupedByDate.has(dateKey)) {
-      groupedByDate.set(dateKey, []);
+  const groupedByDate = React.useMemo(() => {
+    const map = new Map<string, TimelineDocument[]>();
+    for (const doc of sortedData) {
+      const dateKey = format(parseISO(doc.createdAt), 'yyyy-MM-dd');
+      if (!map.has(dateKey)) {
+        map.set(dateKey, []);
+      }
+      map.get(dateKey)!.push(doc);
     }
-    groupedByDate.get(dateKey)!.push(doc);
-  }
+    return map;
+  }, [sortedData]);
 
   const hasData = sortedData.length > 0;
 
@@ -68,8 +85,9 @@ export function DocumentTimeline({ data, className }: DocumentTimelineProps) {
           <div className="space-y-6">
             {Array.from(groupedByDate.entries()).map(([dateKey, docs]) => {
               const date = parseISO(dateKey);
-              const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-              const isYesterday = format(date, 'yyyy-MM-dd') === format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
+              const dateKeyFormatted = format(date, 'yyyy-MM-dd');
+              const isToday = dateKeyFormatted === today;
+              const isYesterday = dateKeyFormatted === yesterday;
 
               let dateLabel = format(date, 'MMMM d, yyyy');
               if (isToday) dateLabel = 'Today';

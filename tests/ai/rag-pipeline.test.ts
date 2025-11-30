@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { queryDocuments, indexDocumentChunks, buildRAGPrompt } from '@/lib/ai/rag-pipeline';
+// These imports are used via dynamic imports in tests
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { generateEmbeddings, generateEmbeddingsBatch } from '@/lib/ai/embeddings';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { queryVectors, upsertVectors } from '@/lib/vector/pinecone';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { generateResponse } from '@/lib/ai/model-selector';
 import { DocumentChunk } from '@/lib/ai/chunking';
 
@@ -80,6 +84,7 @@ describe('RAG Pipeline', () => {
 
       vi.mocked(embeddingsModule.generateEmbeddings).mockResolvedValue(mockEmbedding);
       // Ensure queryVectors returns the results array
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(pineconeModule.queryVectors).mockResolvedValue(mockResults as any);
       vi.mocked(modelModule.generateResponse).mockResolvedValue(mockResponse);
 
@@ -131,6 +136,7 @@ describe('RAG Pipeline', () => {
 
       vi.mocked(embeddingsModule.generateEmbeddings).mockResolvedValue(mockEmbedding);
       // Ensure queryVectors returns the results array
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       vi.mocked(pineconeModule.queryVectors).mockResolvedValue(mockResults as any);
       vi.mocked(modelModule.generateResponse).mockResolvedValue(mockResponse);
 

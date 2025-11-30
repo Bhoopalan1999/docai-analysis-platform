@@ -68,6 +68,8 @@ describe('Document Upload Flow Integration', () => {
             sheetName: 'Sheet1',
             headers: ['Column1', 'Column2'],
             rows: [['Value1', 'Value2']],
+            rowCount: 1,
+            columnCount: 2,
           },
         ],
         metadata: {
@@ -90,6 +92,7 @@ describe('Document Upload Flow Integration', () => {
     });
 
     it('should throw error for unsupported file type', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await expect(processDocument('test-key.txt', 'txt' as any)).rejects.toThrow('Unsupported file type');
     });
 

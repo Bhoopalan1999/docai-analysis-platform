@@ -52,20 +52,22 @@ export function EntityFrequencyChart({ data, className }: EntityFrequencyChartPr
     typeData.set(item.name, (typeData.get(item.name) || 0) + item.count);
   }
 
+  // Note: stackedData prepared but not used in current implementation
+  // Keeping logic for potential future stacked chart feature
   // Prepare data for stacked chart by type
-  const allEntityNames = Array.from(new Set(data.map((d) => d.name))).slice(0, 10);
-  const stackedData = allEntityNames.map((name) => {
-    const entry: Record<string, string | number> = {
-      name: name.length > 15 ? `${name.substring(0, 15)}...` : name,
-      fullName: name,
-    };
+  // const allEntityNames = Array.from(new Set(data.map((d) => d.name))).slice(0, 10);
+  // const stackedData = allEntityNames.map((name) => {
+  //   const entry: Record<string, string | number> = {
+  //     name: name.length > 15 ? `${name.substring(0, 15)}...` : name,
+  //     fullName: name,
+  //   };
 
-    for (const [type, entities] of typeMap.entries()) {
-      entry[type] = entities.get(name) || 0;
-    }
+  //   for (const [type, entities] of typeMap.entries()) {
+  //     entry[type] = entities.get(name) || 0;
+  //   }
 
-    return entry;
-  });
+  //   return entry;
+  // });
 
   const hasData = chartData.length > 0;
 

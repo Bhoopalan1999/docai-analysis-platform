@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
-import { documents, usage } from '@/lib/db/schema';
-import { eq, and, sql, gte, lte } from 'drizzle-orm';
-import { getTierLimits, SubscriptionTier, isWithinLimit } from '@/lib/subscription/tiers';
+import { documents } from '@/lib/db/schema';
+import { eq, and, sql } from 'drizzle-orm';
+import { getTierLimits, SubscriptionTier } from '@/lib/subscription/tiers';
 
 /**
  * Quota check result

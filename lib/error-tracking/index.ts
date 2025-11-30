@@ -80,17 +80,17 @@ export function trackMessage(
  * @param userId - User ID
  * @param userData - Additional user data
  */
-export function setUserContext(userId: string, userData?: Record<string, unknown>): void {
+export function setUserContext(userId: string): void {
   if (process.env.NODE_ENV === 'production') {
     // Example: Sentry integration
     // Sentry.setUser({
     //   id: userId,
-    //   ...userData,
     // });
   }
 
   // Store in global context for logging
   if (typeof window !== 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).__errorTrackingUserId = userId;
   }
 }
@@ -105,6 +105,7 @@ export function clearUserContext(): void {
   }
 
   if (typeof window !== 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (window as any).__errorTrackingUserId;
   }
 }
@@ -149,6 +150,7 @@ export function initErrorTracking(): void {
 /**
  * Helper to wrap async functions with error tracking
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function withErrorTracking<T extends (...args: any[]) => Promise<any>>(fn: T, context?: ErrorContext): T {
   return (async (...args: Parameters<T>) => {
     try {

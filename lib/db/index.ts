@@ -41,7 +41,6 @@ const getPostgresConfig = () => {
 
 // Use a global singleton pattern to ensure only one client instance
 declare global {
-  // eslint-disable-next-line no-var
   var __postgresClient: ReturnType<typeof postgres> | undefined;
 }
 

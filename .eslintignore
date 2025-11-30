@@ -1,0 +1,13 @@
+# Coverage reports
+coverage/
+
+# Build outputs
+.next/
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.generated.*

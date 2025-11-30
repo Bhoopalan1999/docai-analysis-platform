@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, X, Loader2, CheckCircle2 } from 'lucide-react';
+import { Upload, X, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
@@ -30,112 +30,126 @@ const ALLOWED_TYPES = [
 export function DocumentUploader({ onUploadComplete }: DocumentUploaderProps) {
   const [files, setFiles] = useState<FileWithProgress[]>([]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles: FileWithProgress[] = acceptedFiles.map((file) => ({
-      file,
-      progress: 0,
-      status: 'pending',
-    }));
-    setFiles((prev) => [...prev, ...newFiles]);
-
-    // Start uploading each file
-    newFiles.forEach((fileWithProgress) => {
-      uploadFile(fileWithProgress.file);
-    });
-  }, []);
-
-  const uploadFile = async (file: File) => {
-    const fileIndex = files.findIndex((f) => f.file === file);
-
-    // Validate file
-    if (file.size > MAX_FILE_SIZE) {
-      const errorMsg = 'File size exceeds 50MB limit';
-      setFiles((prev) => {
-        const updated = [...prev];
-        updated[fileIndex] = {
-          ...updated[fileIndex],
-          status: 'error',
-          error: errorMsg,
-        };
-        return updated;
-      });
-      toast.error('Upload failed', { description: errorMsg });
-      return;
-    }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      const errorMsg = 'Invalid file type. Only PDF, DOCX, and XLSX are supported';
-      setFiles((prev) => {
-        const updated = [...prev];
-        updated[fileIndex] = {
-          ...updated[fileIndex],
-          status: 'error',
-          error: errorMsg,
-        };
-        return updated;
-      });
-      toast.error('Upload failed', { description: errorMsg });
-      return;
-    }
-
-    // Update status to uploading
-    setFiles((prev) => {
-      const updated = [...prev];
-      updated[fileIndex] = {
-        ...updated[fileIndex],
-        status: 'uploading',
-      };
-      return updated;
-    });
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/api/documents/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
+  const uploadFile = useCallback(
+    async (file: File) => {
+      // Validate file
+      if (file.size > MAX_FILE_SIZE) {
+        const errorMsg = 'File size exceeds 50MB limit';
+        setFiles((prev) => {
+          const fileIdx = prev.findIndex((f) => f.file === file);
+          if (fileIdx === -1) return prev;
+          const updated = [...prev];
+          updated[fileIdx] = {
+            ...updated[fileIdx],
+            status: 'error',
+            error: errorMsg,
+          };
+          return updated;
+        });
+        toast.error('Upload failed', { description: errorMsg });
+        return;
       }
 
-      const data = await response.json();
-
-      // Update status to completed
-      setFiles((prev) => {
-        const updated = [...prev];
-        updated[fileIndex] = {
-          ...updated[fileIndex],
-          status: 'completed',
-          progress: 100,
-        };
-        return updated;
-      });
-
-      toast.success('Upload successful', {
-        description: `${file.name} has been uploaded and is being processed`,
-        icon: <CheckCircle2 className="h-4 w-4" />,
-      });
-
-      if (onUploadComplete) {
-        onUploadComplete(data.documentId);
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        const errorMsg = 'Invalid file type. Only PDF, DOCX, and XLSX are supported';
+        setFiles((prev) => {
+          const fileIdx = prev.findIndex((f) => f.file === file);
+          if (fileIdx === -1) return prev;
+          const updated = [...prev];
+          updated[fileIdx] = {
+            ...updated[fileIdx],
+            status: 'error',
+            error: errorMsg,
+          };
+          return updated;
+        });
+        toast.error('Upload failed', { description: errorMsg });
+        return;
       }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Upload failed';
+
+      // Update status to uploading
       setFiles((prev) => {
+        const fileIdx = prev.findIndex((f) => f.file === file);
+        if (fileIdx === -1) return prev;
         const updated = [...prev];
-        updated[fileIndex] = {
-          ...updated[fileIndex],
-          status: 'error',
-          error: errorMsg,
+        updated[fileIdx] = {
+          ...updated[fileIdx],
+          status: 'uploading',
         };
         return updated;
       });
-      toast.error('Upload failed', { description: errorMsg });
-    }
-  };
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Upload failed');
+        }
+
+        const data = await response.json();
+
+        // Update status to completed
+        setFiles((prev) => {
+          const fileIdx = prev.findIndex((f) => f.file === file);
+          if (fileIdx === -1) return prev;
+          const updated = [...prev];
+          updated[fileIdx] = {
+            ...updated[fileIdx],
+            status: 'completed',
+            progress: 100,
+          };
+          return updated;
+        });
+
+        toast.success('Upload successful', {
+          description: `${file.name} has been uploaded and is being processed`,
+          icon: <CheckCircle2 className="h-4 w-4" />,
+        });
+
+        if (onUploadComplete) {
+          onUploadComplete(data.documentId);
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Upload failed';
+        setFiles((prev) => {
+          const fileIdx = prev.findIndex((f) => f.file === file);
+          if (fileIdx === -1) return prev;
+          const updated = [...prev];
+          updated[fileIdx] = {
+            ...updated[fileIdx],
+            status: 'error',
+            error: errorMsg,
+          };
+          return updated;
+        });
+        toast.error('Upload failed', { description: errorMsg });
+      }
+    },
+    [onUploadComplete]
+  );
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const newFiles: FileWithProgress[] = acceptedFiles.map((file) => ({
+        file,
+        progress: 0,
+        status: 'pending',
+      }));
+      setFiles((prev) => [...prev, ...newFiles]);
+
+      // Start uploading each file
+      newFiles.forEach((fileWithProgress) => {
+        uploadFile(fileWithProgress.file);
+      });
+    },
+    [uploadFile]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

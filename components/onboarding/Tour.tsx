@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
@@ -35,7 +34,10 @@ export function Tour({ steps, onComplete, onSkip, storageKey = 'docai-tour-compl
     // Check if tour was already completed
     const completed = localStorage.getItem(storageKey);
     if (completed !== 'true') {
-      setIsOpen(true);
+      // Use setTimeout to avoid setState in effect
+      setTimeout(() => {
+        setIsOpen(true);
+      }, 0);
     }
   }, [storageKey]);
 
@@ -47,14 +49,21 @@ export function Tour({ steps, onComplete, onSkip, storageKey = 'docai-tour-compl
       // Find target element
       const element = document.querySelector(step.target) as HTMLElement;
       if (element) {
-        setTargetElement(element);
-        // Scroll to element
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Use setTimeout to avoid setState in effect
+        setTimeout(() => {
+          setTargetElement(element);
+          // Scroll to element
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 0);
       } else {
-        setTargetElement(null);
+        setTimeout(() => {
+          setTargetElement(null);
+        }, 0);
       }
     } else {
-      setTargetElement(null);
+      setTimeout(() => {
+        setTargetElement(null);
+      }, 0);
     }
   }, [currentStep, isOpen, steps]);
 

@@ -92,6 +92,7 @@ export async function retryDocumentProcessing(documentId: string, maxRetries: nu
   }
 
   // Check retry count from metadata
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const retryCount = (document.metadata as any)?.retryCount || 0;
   if (retryCount >= maxRetries) {
     throw new Error(`Maximum retry attempts (${maxRetries}) exceeded for document ${documentId}`);

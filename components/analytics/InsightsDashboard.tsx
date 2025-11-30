@@ -8,7 +8,6 @@ import { DocumentTimeline } from './DocumentTimeline';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, TrendingUp, DollarSign, Activity } from 'lucide-react';
-import { format } from 'date-fns';
 
 interface AnalyticsData {
   documentStats: {
