@@ -62,10 +62,10 @@ export function SignUpForm() {
               provider="github"
               disabled={loading}
             />
-            <SocialLoginButton
+            {/* <SocialLoginButton
               provider="microsoft"
               disabled={loading}
-            />
+            /> */}
           </div>
 
           <div className="relative">
