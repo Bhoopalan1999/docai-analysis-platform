@@ -7,6 +7,7 @@ import { documents, conversations } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { rateLimitMiddleware } from '@/lib/rate-limit/middleware';
 import { getCachedQuery, cacheQuery } from '@/lib/cache/redis-cache';
+import { getUserSubscription } from '@/lib/subscription/service';
 
 /**
  * POST /api/ai/query
@@ -41,8 +42,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check rate limit (default to 'free' tier - in production, get from user's subscription)
-    const { response: rateLimitResponse } = await rateLimitMiddleware(session.user.id, 'free', 'query');
+    // Get user's subscription tier
+    const userTier = await getUserSubscription(session.user.id);
+
+    // Check rate limit using user's actual subscription tier
+    const { response: rateLimitResponse } = await rateLimitMiddleware(session.user.id, userTier, 'query');
     if (rateLimitResponse) {
       return rateLimitResponse;
     }
