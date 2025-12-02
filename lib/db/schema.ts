@@ -8,6 +8,11 @@ export const users = pgTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
+  subscriptionTier: text('subscription_tier').notNull().default('free'),
+  subscriptionStatus: text('subscription_status').default('active'), // active, canceled, past_due, etc.
+  subscriptionExpiresAt: timestamp('subscription_expires_at'),
+  stripeCustomerId: text('stripe_customer_id'),
+  stripeSubscriptionId: text('stripe_subscription_id'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -109,11 +114,28 @@ export const usage = pgTable('usage', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// Subscriptions table (for subscription history)
+export const subscriptions = pgTable('subscription', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  tier: text('tier').notNull(), // free, pro, enterprise
+  status: text('status').notNull(), // active, canceled, past_due, etc.
+  stripeSubscriptionId: text('stripe_subscription_id'),
+  stripePriceId: text('stripe_price_id'),
+  currentPeriodStart: timestamp('current_period_start'),
+  currentPeriodEnd: timestamp('current_period_end'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   documents: many(documents),
   conversations: many(conversations),
   usage: many(usage),
+  subscriptions: many(subscriptions),
 }));
 
 export const documentsRelations = relations(documents, ({ one, many }) => ({
@@ -140,5 +162,12 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   conversation: one(conversations, {
     fields: [messages.conversationId],
     references: [conversations.id],
+  }),
+}));
+
+export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [subscriptions.userId],
+    references: [users.id],
   }),
 }));
