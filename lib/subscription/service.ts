@@ -85,8 +85,8 @@ export async function updateUserSubscription(
 
     // If reverting to free, clear Stripe data
     if (tier === 'free') {
-      updateData.stripeSubscriptionId = null;
-      updateData.subscriptionExpiresAt = null;
+      updateData.stripeSubscriptionId = undefined;
+      updateData.subscriptionExpiresAt = undefined;
     }
 
     await db.update(users).set(updateData).where(eq(users.id, userId));

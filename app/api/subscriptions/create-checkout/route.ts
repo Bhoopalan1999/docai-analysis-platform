@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth/server';
-import { getUserSubscriptionDetails, getOrCreateStripeCustomer } from '@/lib/subscription/service';
+// import { getUserSubscriptionDetails, getOrCreateStripeCustomer } from '@/lib/subscription/service';
 import { createCheckoutSession, createStripeCustomer } from '@/lib/subscription/stripe';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
